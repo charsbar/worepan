@@ -1,0 +1,12 @@
+Changes
+lib/WorePAN.pm
+Makefile.PL
+MANIFEST			This list of files
+README
+t/00_load.t
+t/10_local.t
+t/20_cpan.t
+t/30_backpan.t
+t/40_requires.t
+t/99_pod.t
+t/99_podcoverage.t
