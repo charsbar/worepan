@@ -61,7 +61,7 @@ sub _fetch {
     }
     else {
       if ($file !~ m{^([A-Z])/(\1[A-Z0-9_])/\2[A-Z0-9_]+/.+}) {
-        if ($file !~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_]+/.+}) {
+        if ($file =~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_]+/.+}) {
           $file = "$1/$1$2/$file";
         }
         else {
@@ -136,6 +136,8 @@ sub __fetch {
   my ($self, $file) = @_;
 
   my $dest = $self->{root}->file("authors/id/", $file);
+  return $dest if $dest->exists;
+
   $dest->parent->mkdir;
 
   if ($self->{local_mirror}) {
