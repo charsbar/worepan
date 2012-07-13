@@ -11,7 +11,7 @@ for my $prefix (qw{I/IS/ISHIGAKI ISHIGAKI}) {
 
   my $worepan = WorePAN->new(files => [$path], no_network => 0, cleanup => 1);
 
-  my $dest = $worepan->root->file("authors/id/I/IS/ISHIGAKI/$basename");
+  my $dest = $worepan->file("I/IS/ISHIGAKI/$basename");
 
   ok $dest->exists, "downloaded successfully";
 

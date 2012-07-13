@@ -10,7 +10,7 @@ my $tmpfile = create_dummy_archive();
 
 my $worepan = WorePAN->new(files => [$tmpfile->path], cleanup => 1);
 
-my $dest = $worepan->root->file("authors/id/L/LO/LOCAL", $tmpfile->basename);
+my $dest = $worepan->file("L/LO/LOCAL", $tmpfile->basename);
 
 ok $dest->exists, "copied correctly";
 is $dest->mtime => $tmpfile->mtime, "mtime is correct";

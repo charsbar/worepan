@@ -9,7 +9,7 @@ my $path = 'I/IS/ISHIGAKI/Acme-CPANAuthors-0.01.tar.gz';
 
 my $worepan = WorePAN->new(files => [$path], no_network => 0, cleanup => 1, use_backpan => 1);
 
-my $dest = $worepan->root->file("authors/id/", $path);
+my $dest = $worepan->file($path);
 
 ok $dest->exists, "downloaded successfully";
 

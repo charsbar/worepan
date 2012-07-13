@@ -3,7 +3,8 @@ package WorePAN;
 use strict;
 use warnings;
 use CPAN::ParseDistribution;
-use Path::Extended;
+use Path::Extended::Dir;
+use Path::Extended::File;
 use LWP::Simple;
 use IO::Zlib;
 use JSON;
@@ -23,7 +24,7 @@ sub new {
     $args{root} = File::Temp::tempdir(CLEANUP => 1);
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
   }
-  $args{root} = dir($args{root})->mkdir;
+  $args{root} = Path::Extended::Dir->new($args{root})->mkdir;
   $args{cpan} ||= "http://www.cpan.org/";
   $args{no_network} = 1 if !defined $args{no_network} && $ENV{HARNESS_ACTIVE};
 
@@ -43,6 +44,9 @@ sub new {
 }
 
 sub root { shift->{root} }
+sub file { shift->{root}->file('authors/id', @_) }
+sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
+sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
 
 sub _fetch {
   my ($self, $files) = @_;
@@ -53,7 +57,7 @@ sub _fetch {
   for my $file (@$files) {
     my $dest;
     if (-f $file && $file =~ /(?:\.tar\.gz|\.zip|\.tar\.bz2)$/) {
-      my $source = file($file);
+      my $source = Path::Extended::File->new($file);
       $dest = $_root->file('L/LO/LOCAL/', $source->basename);
       $self->_log("copy $source to $dest");
       $source->copy_to($dest);
@@ -141,7 +145,7 @@ sub __fetch {
   $dest->parent->mkdir;
 
   if ($self->{local_mirror}) {
-    my $source = file($self->{local_mirror}, "authors/id", $file);
+    my $source = Path::Extended::File->new($self->{local_mirror}, "authors/id", $file);
     if ($source->exists) {
       $self->_log("copy $source to $dest");
       $source->copy_to($dest);
@@ -170,7 +174,7 @@ sub __fetch {
 sub _write_mailrc {
   my ($self, $authors) = @_;
 
-  my $index = $self->{root}->file('authors/01mailrc.txt.gz');
+  my $index = $self->mailrc;
   $index->parent->mkdir;
   my $fh = IO::Zlib->new($index->path, "wb") or die $!;
   for (sort keys %$authors) {
@@ -183,7 +187,7 @@ sub _write_mailrc {
 sub _write_packages_details {
   my ($self, $packages) = @_;
 
-  my $index = $self->{root}->file('modules/02packages.details.txt.gz');
+  my $index = $self->packages_details;
   $index->parent->mkdir;
   my $fh = IO::Zlib->new($index->path, "wb") or die $!;
   $fh->print("File: 02packages.details.txt\n");
@@ -203,7 +207,7 @@ sub _write_packages_details {
 sub look_for {
   my ($self, $package) = @_;
 
-  my $index = $self->{root}->file('modules/02packages.details.txt.gz');
+  my $index = $self->packages_details;
   return [] unless $index->exists;
   my $fh = IO::Zlib->new($index->path, "rb") or die $!;
 
@@ -316,7 +320,19 @@ Given a path to a tar executable, L<CPAN::ParseDistribution> will use it interna
 
 =head2 root
 
-returns the root path you specified (or created internally).
+returns a L<Path::Extended::Dir> object that represents the root path you specified (or created internally).
+
+=head2 file
+
+takes a relative path to a distribution ("P/PA/PAUSE/distribution.tar.gz") and returns a L<Path::Extended::File> object.
+
+=head2 mailrc
+
+returns a L<Path::Extended::File> object that represents the "01mailrc.txt.gz" file.
+
+=head2 packages_details
+
+returns a L<Path::Extended::File> object that represents the "02packages.details.txt.gz" file.
 
 =head2 look_for
 
