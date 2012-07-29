@@ -38,7 +38,10 @@ sub new {
   }
   # XXX: I don't think we need something like ->_mods2files, right?
 
-  $self->_fetch(\@files) if @files;
+  if (@files) {
+    $self->_fetch(\@files);
+    $self->update_indices;
+  }
 
   $self;
 }
@@ -76,26 +79,7 @@ sub _fetch {
 
       $dest = $self->__fetch($file) or next;
     }
-
-    my $path = $dest->relative($_root);
-    my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
-    $authors{$author} = 1;
-
-    my $dist = eval { CPAN::ParseDistribution->new($dest->path, use_tar => $self->{tar}) } or next;
-    my $modules = $dist->modules;
-    for my $module (keys %$modules) {
-      if ($packages{$module}) {
-        if (version->new($packages{$module}[0]) < version->new($modules->{$module})) {
-          $packages{$module} = [$modules->{$module}, $path];
-        }
-      }
-      else {
-        $packages{$module} = [$modules->{$module}, $path];
-      }
-    }
   }
-  $self->_write_mailrc(\%authors);
-  $self->_write_packages_details(\%packages);
 }
 
 sub _dists2files {
@@ -169,6 +153,39 @@ sub __fetch {
   }
   warn "Can't fetch $file\n";
   return;
+}
+
+sub update_indices {
+  my $self = shift;
+  my $root = $self->{root}->subdir('authors/id');
+
+  my (%authors, %packages);
+  $root->recurse(callback => sub {
+    my $file = shift;
+    return if -d $file;
+
+    my $basename = $file->basename;
+    return unless $basename =~ /\.(?:tar\.(gz|bz2)|tgz|zip)$/;
+
+    my $path = $file->relative($root);
+    my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
+    $authors{$author} = 1;
+
+    my $dist = eval { CPAN::ParseDistribution->new($file->path, use_tar => $self->{tar}) } or return;
+    my $modules = $dist->modules;
+    for my $module (keys %$modules) {
+      if ($packages{$module}) {
+        if (version->new($packages{$module}[0]) < version->new($modules->{$module})) {
+          $packages{$module} = [$modules->{$module}, $path];
+        }
+      }
+      else {
+        $packages{$module} = [$modules->{$module}, $path];
+      }
+    }
+  });
+  $self->_write_mailrc(\%authors);
+  $self->_write_packages_details(\%packages);
 }
 
 sub _write_mailrc {
