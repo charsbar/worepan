@@ -190,7 +190,7 @@ sub update_indices {
     my $modules = $dist->modules;
     for my $module (keys %$modules) {
       if ($packages{$module}) {
-        if (version->new($packages{$module}[0]) < version->new($modules->{$module})) {
+        if (eval { version->new($packages{$module}[0]) } < eval { version->new($modules->{$module}) }) {
           $packages{$module} = [$modules->{$module}, $path];
         }
       }
