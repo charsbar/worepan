@@ -51,6 +51,21 @@ sub file { shift->{root}->file('authors/id', @_) }
 sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
 sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
 
+sub add_files {
+  my ($self, @files) = @_;
+  $self->_fetch(\@files);
+}
+
+sub add_dists {
+  my ($self, %dists) = @_;
+  if ($self->{no_network}) {
+    warn "requires network\n";
+    return;
+  }
+  my @files = $self->_dists2files(\%dists);
+  $self->_fetch(\@files);
+}
+
 sub _fetch {
   my ($self, $files) = @_;
 
@@ -334,6 +349,27 @@ Given a path to a tar executable, L<CPAN::ParseDistribution> will use it interna
 =item verbose
 
 =back
+
+=head2 add_files
+
+  $worepan->add_files(qw{
+    I/IS/ISHIGAKI/WorePAN-0.01.tar.gz
+  });
+
+Adds files to the WorePAN mirror. When you add files with this method, you need to call C<update_indices> by yourself.
+
+=head2 add_dists
+
+  $worepan->add_dists(
+    'Catalyst-Runtime' => 5.9,
+    'DBIx-Class'       => 0,
+  );
+
+Adds distributions to the WorePAN mirror. When you add distributions with this method, you need to call C<update_indices> by yourself.
+
+=head2 update_indices
+
+Creates/updates mailrc and packages_details indices.
 
 =head2 root
 
