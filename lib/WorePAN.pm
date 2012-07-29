@@ -81,7 +81,7 @@ sub _fetch {
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
 
-    my $dist = CPAN::ParseDistribution->new($dest->path, use_tar => $self->{tar});
+    my $dist = eval { CPAN::ParseDistribution->new($dest->path, use_tar => $self->{tar}) } or next;
     my $modules = $dist->modules;
     for my $module (keys %$modules) {
       if ($packages{$module}) {
