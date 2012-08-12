@@ -258,6 +258,87 @@ sub look_for {
   return;
 }
 
+sub authors {
+  my $self = shift;
+
+  my $index = $self->mailrc;
+  return [] unless $index->exists;
+  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+
+  my @authors;
+  while(<$fh>) {
+    my ($id, $name, $email) = $_ =~ /^alias\s+(\S+)\s+"?(.+?)\s+(\S+)"?\s*$/;
+    next unless $id;
+    $email =~ tr/<>//cd;
+    push @authors, {pauseid => $id, name => $name, email => $email};
+  }
+  \@authors;
+}
+
+sub modules {
+  my $self = shift;
+
+  my $index = $self->packages_details;
+  return [] unless $index->exists;
+  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+
+  my @modules;
+  my $done_preambles = 0;
+  while(<$fh>) {
+    chomp;
+    if (/^\s*$/) {
+      $done_preambles = 1;
+      next;
+    }
+    next unless $done_preambles;
+
+    /^(\S+)\s+(\S+)/ or next;
+    push @modules, {module => $1 ,version => $2 eq 'undef' ? undef : $2};
+  }
+  \@modules;
+}
+
+sub files {
+  my $self = shift;
+  my $index = $self->packages_details;
+  return [] unless $index->exists;
+  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+
+  my %files;
+  my $done_preambles = 0;
+  while(<$fh>) {
+    chomp;
+    if (/^\s*$/) {
+      $done_preambles = 1;
+      next;
+    }
+    next unless $done_preambles;
+
+    /^\S+\s+\S+\s+(\S+)/ or next;
+    $files{$1} = 1;
+  }
+  [keys %files];
+}
+
+sub latest_distributions {
+  my $self = shift;
+
+  require CPAN::DistnameInfo;
+  require CPAN::Version;
+  my %dists;
+  for (@{ $self->files || [] }) {
+    my $dist = CPAN::DistnameInfo->new($_);
+    my $name = $dist->dist or next;
+    if (
+      !exists $dists{$name}
+      or CPAN::Version->vlt($dists{$name}->version, $dist->version)
+    ) {
+      $dists{$name} = $dist;
+    }
+  }
+  [values %dists];
+}
+
 sub DESTROY {
   my $self = shift;
   if ($self->{cleanup}) {
@@ -390,6 +471,22 @@ returns a L<Path::Extended::File> object that represents the "02packages.details
 =head2 look_for
 
 takes a package name and returns the version and the path of the package if it exists.
+
+=head2 authors
+
+returns an array reference of hash references each of which holds an author's information stored in the mailrc file.
+
+=head2 modules
+
+returns an array reference of hash references each of which holds a module name and its version stored in the packages_details file.
+
+=head2 files
+
+returns an array reference of files listed in the packages_details file.
+
+=head2 latest_distributions
+
+returns an array reference of L<CPAN::DistnameInfo> objects each of which holds a latest distribution's info stored in the packages_details file.
 
 =head1 HOW TO PRONOUNCE (IF YOU CARE)
 
