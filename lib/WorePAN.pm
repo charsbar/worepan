@@ -269,7 +269,7 @@ sub authors {
   while(<$fh>) {
     my ($id, $name, $email) = $_ =~ /^alias\s+(\S+)\s+"?(.+?)\s+(\S+)"?\s*$/;
     next unless $id;
-    $email =~ tr/<>//cd;
+    $email =~ tr/<>//d;
     push @authors, {pauseid => $id, name => $name, email => $email};
   }
   \@authors;
