@@ -17,7 +17,7 @@ my $worepan = WorePAN->new(
 my $authors = $worepan->authors;
 ok @$authors && @$authors == 1, "only one author exists";
 is $authors->[0]{pauseid} => 'BARBIE', "and it's Barbie";
-like $authors->[0]{email} => qr/\w\@\w+/, "looks like email";
+like $authors->[0]{email} => qr/^\w+\@[\w.]+$/, "looks like email";
 
 my $modules = $worepan->modules;
 ok @$modules && @$modules == 2, "two modules are listed";
