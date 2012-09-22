@@ -11,6 +11,7 @@ my $worepan = WorePAN->new(
     BARBIE/Test-YAML-Meta-0.16.tar.gz
   }],
   cleanup => 1,
+  use_backpan => 1,
   no_network => 0,
 );
 
