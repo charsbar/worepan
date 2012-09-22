@@ -292,8 +292,8 @@ sub modules {
     }
     next unless $done_preambles;
 
-    /^(\S+)\s+(\S+)/ or next;
-    push @modules, {module => $1 ,version => $2 eq 'undef' ? undef : $2};
+    /^(\S+)\s+(\S+)\s+(\S+)/ or next;
+    push @modules, {module => $1 ,version => $2 eq 'undef' ? undef : $2, file => $3};
   }
   \@modules;
 }
