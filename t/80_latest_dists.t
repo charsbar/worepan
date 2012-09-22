@@ -23,8 +23,8 @@ my $modules = $worepan->modules;
 ok @$modules && @$modules == 2, "two modules are listed";
 is_deeply [sort {$a->{module} cmp $b->{module}} @$modules] => 
   [
-    {module => 'Test::YAML::Meta', version => '0.19'},
-    {module => 'Test::YAML::Meta::Version', version => '0.16'}
+    {module => 'Test::YAML::Meta', version => '0.19', file => 'B/BA/BARBIE/Test-YAML-Meta-0.19.tar.gz'},
+    {module => 'Test::YAML::Meta::Version', version => '0.16', file => 'B/BA/BARBIE/Test-YAML-Meta-0.16.tar.gz'}
   ], "modules are correct";
 
 my $files = $worepan->files;
