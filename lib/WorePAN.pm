@@ -74,7 +74,7 @@ sub _fetch {
   my $_root = $self->{root}->subdir('authors/id');
   for my $file (@$files) {
     my $dest;
-    if (-f $file && $file =~ /(?:\.tar\.gz|\.zip|\.tar\.bz2)$/) {
+    if (-f $file && $file =~ /\.(?:tar\.(?:gz:bz2)|tgz|zip)$/) {
       my $source = Path::Extended::File->new($file);
       $dest = $_root->file('L/LO/LOCAL/', $source->basename);
       $self->_log("copy $source to $dest");
