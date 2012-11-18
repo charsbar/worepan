@@ -14,4 +14,6 @@ $worepan->add_files(qw{
 
 ok $worepan->update_indices;
 
+is $worepan->look_for('Forks::Super') => '0.51', "got a correct version";
+
 done_testing;
