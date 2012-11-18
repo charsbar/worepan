@@ -74,7 +74,7 @@ sub _fetch {
   my $_root = $self->{root}->subdir('authors/id');
   for my $file (@$files) {
     my $dest;
-    if (-f $file && $file =~ /\.(?:tar\.(?:gz:bz2)|tgz|zip)$/) {
+    if (-f $file && $file =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/) {
       my $source = Path::Extended::File->new($file);
       $dest = $_root->file('L/LO/LOCAL/', $source->basename);
       $self->_log("copy $source to $dest");
@@ -180,7 +180,7 @@ sub update_indices {
     return if -d $file;
 
     my $basename = $file->basename;
-    return unless $basename =~ /\.(?:tar\.(gz|bz2)|tgz|zip)$/;
+    return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
 
     my $path = $file->relative($root);
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
