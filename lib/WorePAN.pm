@@ -201,6 +201,8 @@ sub update_indices {
   });
   $self->_write_mailrc(\%authors);
   $self->_write_packages_details(\%packages);
+
+  return 1;
 }
 
 sub _write_mailrc {
