@@ -186,6 +186,18 @@ sub update_indices {
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
 
+    # tweaks for CPAN::ParseDistribution to warn less verbosely
+    local *CPAN::ParseDistribution::qv = \&version::qv;
+    local $SIG{__WARN__} = sub {
+      if ($_[0] =~ /^_parse_version_safely: \$VAR1 = ({.+};)\s*$/sm) {
+        my $err = eval $1;
+        if ($err && ref $err eq ref {}) {
+          warn "_parse_version_safely error ($err->{line}) at $err->{file}";
+          return;
+        }
+      }
+      warn @_;
+    };
     my $dist = eval { CPAN::ParseDistribution->new($file->path, use_tar => $self->{tar}) } or return;
     my $modules = $dist->modules;
     for my $module (keys %$modules) {
