@@ -162,7 +162,7 @@ sub __fetch {
       return $dest;
     }
     if ($self->{backpan}) {
-      my $url = $self->{backpan}."/authors/id/$file";
+      my $url = $self->{backpan}."authors/id/$file";
       $self->_log("mirror $url to $dest");
       if (!is_error(mirror($url => $dest))) {
         return $dest;
