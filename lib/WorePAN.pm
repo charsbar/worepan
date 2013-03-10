@@ -26,6 +26,9 @@ sub new {
   }
   $args{root} = Path::Extended::Dir->new($args{root})->mkdir;
   $args{cpan} ||= "http://www.cpan.org/";
+  if ($args{use_backpan}) {
+    $args{backpan} ||= "http://backpan.cpan.org/";
+  }
   $args{no_network} = 1 if !defined $args{no_network} && $ENV{HARNESS_ACTIVE};
 
   my $self = bless \%args, $class;
@@ -158,8 +161,8 @@ sub __fetch {
     if (!is_error(mirror($url => $dest))) {
       return $dest;
     }
-    if ($self->{use_backpan}) {
-      my $url = "http://backpan.cpan.org/authors/id/$file";
+    if ($self->{backpan}) {
+      my $url = $self->{backpan}."/authors/id/$file";
       $self->_log("mirror $url to $dest");
       if (!is_error(mirror($url => $dest))) {
         return $dest;
@@ -432,6 +435,10 @@ If set to true, WorePAN won't try to fetch files from remote sources. This is se
 =item use_backpan
 
 If set to true, WorePAN also looks into the BackPAN when it fails to fetch a file from the CPAN.
+
+=item backpan
+
+a BackPAN mirror from where you'd like to fetch files.
 
 =item cleanup
 
