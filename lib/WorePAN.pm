@@ -31,6 +31,8 @@ sub new {
   }
   $args{no_network} = 1 if !defined $args{no_network} && $ENV{HARNESS_ACTIVE};
 
+  $args{pid} = $$;
+
   my $self = bless \%args, $class;
 
   my @files = @{ delete $self->{files} || [] };
@@ -358,7 +360,7 @@ sub latest_distributions {
 
 sub DESTROY {
   my $self = shift;
-  if ($self->{cleanup}) {
+  if ($self->{cleanup} && $$ == $self->{pid}) {
     $self->{root}->remove;
   }
 }
