@@ -258,6 +258,8 @@ sub _write_packages_details {
 sub look_for {
   my ($self, $package) = @_;
 
+  return unless defined $package;
+
   my $index = $self->packages_details;
   return [] unless $index->exists;
   my $fh = IO::Zlib->new($index->path, "rb") or die $!;
