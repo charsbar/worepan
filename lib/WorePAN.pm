@@ -2,11 +2,12 @@ package WorePAN;
 
 use strict;
 use warnings;
-use CPAN::ParseDistribution;
+use Archive::Any::Lite;
+use File::Temp ();
+use Parse::PMFile;
 use Path::Extended::Dir;
 use Path::Extended::File;
 use LWP::Simple;
-use IO::Zlib;
 use JSON;
 use URI;
 use URI::QueryParam;
@@ -20,7 +21,6 @@ sub new {
   $args{verbose} ||= $ENV{TEST_VERBOSE};
 
   if (!$args{root}) {
-    require File::Temp;
     $args{root} = File::Temp::tempdir(CLEANUP => 1);
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
   }
@@ -181,38 +181,84 @@ sub update_indices {
 
   my (%authors, %packages);
   $root->recurse(callback => sub {
-    my $file = shift;
-    return if -d $file;
+    my $archive_file = shift;
+    return if -d $archive_file;
 
-    my $basename = $file->basename;
+    my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
 
-    my $path = $file->relative($root);
+    my $path = $archive_file->relative($root);
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
 
-    # tweaks for CPAN::ParseDistribution to warn less verbosely
-    local *CPAN::ParseDistribution::qv = \&version::qv;
-    local $SIG{__WARN__} = sub {
-      if ($_[0] =~ /^_parse_version_safely: \$VAR1 = ({.+};)\s*$/sm) {
-        my $err = eval $1;
-        if ($err && ref $err eq ref {}) {
-          warn "_parse_version_safely error ($err->{line}) at $err->{file}";
-          return;
+    my $archive = Archive::Any::Lite->new($archive_file->path);
+    my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1));
+    $archive->extract($tmpdir);
+    my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
+
+    # a dist that has blib/ shouldn't be indexed
+    # see PAUSE::dist::mail_summary
+    return if $basedir->basename eq 'blib' or $basedir->subdir('blib')->exists;
+
+    my ($metafile, @pmfiles);
+    $basedir->recurse(callback => sub {
+      my $file = shift;
+      push @pmfiles, $file if $file =~ /\.pm(?:\.PL)?$/i;
+      $metafile ||= $file if $file =~ /META.(?:yml|json)$/;
+    });
+
+    my $meta;
+    if ($metafile) {
+      my $content = do { local $/; open my $fh, '<:utf8', $metafile; <$fh> };
+      if ($metafile =~ /\.yml$/) {
+        require CPAN::Meta::YAML;
+        $meta = eval { CPAN::Meta::YAML->read_string($content)->[0] };
+      } else {
+        $meta = eval { JSON::decode_json($content) };
+      }
+    }
+
+    my $parser = Parse::PMFile->new($meta);
+PMFILES:
+    for my $pmfile (@pmfiles) {
+      my $relpath = $pmfile->relative($basedir);
+
+      # adopted from PAUSE::dist::filter_pms
+      next if $relpath =~ m!^(?:x?t|inc|local|perl5)!;
+
+      if ($meta) {
+        my $no_index = $meta->{no_index} || $meta->{private};
+        if (ref $no_index eq 'HASH') {
+          my %map = (
+            file => qr{\z},
+            directory => qr{/},
+          );
+          for my $k (qw(file directory)) {
+            next unless my $v = $no_index->{$k};
+            my $rest = $map{$k};
+            if (ref $v eq 'ARRAY') {
+              for my $ve (@$v) {
+                $ve =~ s|/+$||;
+                next PMFILES if $relpath =~ /^$ve$rest/;
+              }
+            } else {
+              $v =~ s|/+$||;
+              next PMFILES if $relpath =~ /^$v$rest/;
+            }
+          }
         }
       }
-      warn @_;
-    };
-    my $dist = eval { CPAN::ParseDistribution->new($file->path, use_tar => $self->{tar}) } or return;
-    my $modules = $dist->modules;
-    for my $module (keys %$modules) {
-      if ($packages{$module}) {
-        if (eval { version->new($packages{$module}[0]) < version->new($modules->{$module}) }) {
-          $packages{$module} = [$modules->{$module}, $path];
+
+      my $info = $parser->parse($pmfile);
+      for my $module (sort keys %$info) {
+        if ($packages{$module}) {
+          if (eval { version->new($packages{$module}[0]) < version->new($info->{$module}{version}) }) {
+            $packages{$module} = [$info->{$module}{version}, $path];
+          }
         }
-      }
-      else {
-        $packages{$module} = [$modules->{$module}, $path];
+        else {
+          $packages{$module} = [$info->{$module}{version}, $path];
+        }
       }
     }
   });
