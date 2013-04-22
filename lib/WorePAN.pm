@@ -228,8 +228,8 @@ sub _write_mailrc {
   my $index = $self->mailrc;
   $index->parent->mkdir;
   my $fh = IO::Zlib->new($index->path, "wb") or die $!;
-  for (sort keys %$authors) {
-    $fh->printf("alias %s \"%s <%s\@cpan.org>\"\n", $_, $_, lc $_);
+  for my $id (sort keys %$authors) {
+    $fh->printf("alias %s \"%s <%s\@cpan.org>\"\n", $id, $id, lc $id);
   }
   $fh->close;
   $self->_log("created $index");
@@ -244,11 +244,11 @@ sub _write_packages_details {
   $fh->print("File: 02packages.details.txt\n");
   $fh->print("Last-Updated: ".localtime(time)."\n");
   $fh->print("\n");
-  for (sort keys %$packages) {
+  for my $pkg (sort keys %$packages) {
     $fh->printf("%-40s %-7s %s\n",
-      $_,
-      (defined $packages->{$_}[0] ? $packages->{$_}[0] : 'undef'),
-      $packages->{$_}[1]
+      $pkg,
+      (defined $packages->{$pkg}[0] ? $packages->{$pkg}[0] : 'undef'),
+      $packages->{$pkg}[1]
     );
   }
   $fh->close;
@@ -285,8 +285,8 @@ sub authors {
   my $fh = IO::Zlib->new($index->path, "rb") or die $!;
 
   my @authors;
-  while(<$fh>) {
-    my ($id, $name, $email) = $_ =~ /^alias\s+(\S+)\s+"?(.+?)\s+(\S+?)"?\s*$/;
+  while(defined(my $line = <$fh>)) {
+    my ($id, $name, $email) = $line =~ /^alias\s+(\S+)\s+"?(.+?)\s+(\S+?)"?\s*$/;
     next unless $id;
     $email =~ tr/<>//d;
     push @authors, {pauseid => $id, name => $name, email => $email};
@@ -345,8 +345,8 @@ sub latest_distributions {
   require CPAN::DistnameInfo;
   require CPAN::Version;
   my %dists;
-  for (@{ $self->files || [] }) {
-    my $dist = CPAN::DistnameInfo->new($_);
+  for my $file (@{ $self->files || [] }) {
+    my $dist = CPAN::DistnameInfo->new($file);
     my $name = $dist->dist or next;
     if (
       !exists $dists{$name}

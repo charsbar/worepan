@@ -24,10 +24,10 @@ my %cant_be_included = (
   'V/VL/VLADO/text2xfig.pl-1.3' => 'text2xfig',
 );
 
-for (keys %cant_be_included) {
+for my $file (keys %cant_be_included) {
   my $worepan = eval {
     WorePAN->new(
-      files => [$_],
+      files => [$file],
       no_network => 0,
       cleanup => 1,
     );
@@ -35,8 +35,8 @@ for (keys %cant_be_included) {
 
   ok !$@ && $worepan, "created worepan mirror";
   note $@ if $@;
-  ok $worepan && $worepan->file($_)->exists, "downloaded $_ successfully";
-  ok $worepan && !$worepan->look_for($cant_be_included{$_}), "not found in the index";
+  ok $worepan && $worepan->file($file)->exists, "downloaded $file successfully";
+  ok $worepan && !$worepan->look_for($cant_be_included{$file}), "not found in the index";
 }
 
 done_testing;
