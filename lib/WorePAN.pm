@@ -13,6 +13,8 @@ use URI;
 use URI::QueryParam;
 use version;
 use CPAN::Version;
+use CPAN::Meta::YAML;
+use CPAN::DistnameInfo;
 
 our $VERSION = '0.01';
 
@@ -219,7 +221,6 @@ sub update_indices {
     if ($metafile) {
       my $content = do { local $/; open my $fh, '<:utf8', $metafile; <$fh> };
       if ($metafile =~ /\.yml$/) {
-        require CPAN::Meta::YAML;
         $meta = eval { CPAN::Meta::YAML->read_string($content)->[0] };
       } else {
         $meta = eval { JSON::decode_json($content) };
@@ -422,8 +423,6 @@ sub files {
 sub latest_distributions {
   my $self = shift;
 
-  require CPAN::DistnameInfo;
-  require CPAN::Version;
   my %dists;
   for my $file (@{ $self->files || [] }) {
     my $dist = CPAN::DistnameInfo->new($file);
