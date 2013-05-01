@@ -297,9 +297,15 @@ sub _write_packages_details {
   $fh->print("Last-Updated: ".localtime(time)."\n");
   $fh->print("\n");
   for my $pkg (sort keys %$packages) {
-    $fh->printf("%-40s %-7s %s\n",
+    my ($first, $second) = (30, 8);
+    my $ver = defined $packages->{$pkg}[0] ? $packages->{$pkg}[0] : 'undef';
+    if (length($pkg) > $first) {
+      $second = length($ver);
+      $first += 8 - $second;
+    }
+    $fh->printf("%-${first}s %${second}s %s\n",
       $pkg,
-      (defined $packages->{$pkg}[0] ? $packages->{$pkg}[0] : 'undef'),
+      $ver,
       $packages->{$pkg}[1]
     );
   }
