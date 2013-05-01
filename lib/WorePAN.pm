@@ -296,7 +296,7 @@ sub _write_packages_details {
   $fh->print("File: 02packages.details.txt\n");
   $fh->print("Last-Updated: ".localtime(time)."\n");
   $fh->print("\n");
-  for my $pkg (sort keys %$packages) {
+  for my $pkg (map {$_->[1]} sort {$a->[0] cmp $b->[0]} map {[lc $_, $_]} keys %$packages) {
     my ($first, $second) = (30, 8);
     my $ver = defined $packages->{$pkg}[0] ? $packages->{$pkg}[0] : 'undef';
     if (length($pkg) > $first) {
