@@ -187,6 +187,10 @@ sub update_indices {
 
     my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
+    return if $basename =~ /\d\.\d+_\d/  # dev release
+           or $basename =~ /TRIAL/       # trial release
+           or $basename =~ /perl\-\d+/   # perls
+           ;
 
     my $path = $archive_file->relative($root);
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
