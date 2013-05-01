@@ -12,6 +12,7 @@ use JSON;
 use URI;
 use URI::QueryParam;
 use version;
+use CPAN::Version;
 
 our $VERSION = '0.01';
 
@@ -193,6 +194,7 @@ sub update_indices {
            ;
 
     my $path = $archive_file->relative($root);
+    my $mtime = $archive_file->mtime;
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
 
@@ -257,13 +259,31 @@ PMFILES:
 
       my $info = $parser->parse($pmfile);
       for my $module (sort keys %$info) {
-        if ($packages{$module}) {
-          if (eval { version->new($packages{$module}[0]) < version->new($info->{$module}{version}) }) {
-            $packages{$module} = [$info->{$module}{version}, $path];
-          }
+        if (!$packages{$module}) { # shortcut
+          $packages{$module} = [$info->{$module}{version}, $path, $mtime];
+          next;
+        }
+        my $ok = 0;
+        my $new_version = $info->{$module}{version};
+        my $cur_version = $packages{$module}[0];
+        if (CPAN::Version->vgt($new_version, $cur_version)) {
+          $ok++;
+        }
+        elsif (CPAN::Version->vgt($cur_version, $new_version)) {
+          # lower VERSION number
         }
         else {
-          $packages{$module} = [$info->{$module}{version}, $path];
+          if (
+            $new_version eq 'undef' or $new_version == '0' or
+            CPAN::Version->vcmp($new_version, $cur_version) == 0
+          ) {
+            if ($mtime >= $packages{$module}[2]) {
+              $ok++; # dist is newer
+            }
+          }
+        }
+        if ($ok) {
+          $packages{$module} = [$new_version, $path, $mtime];
         }
       }
     }
