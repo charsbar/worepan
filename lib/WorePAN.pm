@@ -195,6 +195,7 @@ sub update_indices {
     my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1));
     $archive->extract($tmpdir);
     my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
+    $basedir = $tmpdir unless -d $basedir;
 
     # a dist that has blib/ shouldn't be indexed
     # see PAUSE::dist::mail_summary
