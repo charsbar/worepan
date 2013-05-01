@@ -180,6 +180,7 @@ sub update_indices {
   my $root = $self->{root}->subdir('authors/id');
 
   my (%authors, %packages);
+  local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
   $root->recurse(callback => sub {
     my $archive_file = shift;
     return if -d $archive_file;
