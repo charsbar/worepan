@@ -178,11 +178,10 @@ sub __fetch {
   return;
 }
 
-sub update_indices {
-  my $self = shift;
+sub walk {
+  my ($self, %args) = @_;
   my $root = $self->{root}->subdir('authors/id');
 
-  my (%authors, %packages);
   local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
   $root->recurse(callback => sub {
     my $archive_file = shift;
@@ -190,21 +189,33 @@ sub update_indices {
 
     my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
-    return if $basename =~ /\d\.\d+_\d/  # dev release
-           or $basename =~ /TRIAL/       # trial release
-           or $basename =~ /perl\-\d+/   # perls
-           ;
-
-    my $path = $archive_file->relative($root);
-    my $mtime = $archive_file->mtime;
-    my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
-    $authors{$author} = 1;
+    return if $basename =~ /perl\-\d+/; # perls
+    return if !$args{developer_releases} && (
+         $basename =~ /\d\.\d+_\d/  # dev release
+      or $basename =~ /TRIAL/       # trial release
+    );
 
     my $archive = Archive::Any::Lite->new($archive_file->path);
     my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1));
     $archive->extract($tmpdir);
     my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
     $basedir = $tmpdir unless -d $basedir;
+
+    $args{callback}->($basedir, $path, $archive_file);
+  });
+}
+
+sub update_indices {
+  my $self = shift;
+
+  my (%authors, %packages);
+  $self->walk(callback => sub {
+    my ($basedir, $path, $archive_file) = @_;
+
+    my $path = $archive_file->relative($root);
+    my $mtime = $archive_file->mtime;
+    my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
+    $authors{$author} = 1;
 
     # a dist that has blib/ shouldn't be indexed
     # see PAUSE::dist::mail_summary
