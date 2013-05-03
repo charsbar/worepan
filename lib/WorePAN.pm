@@ -275,7 +275,7 @@ PMFILES:
         }
         else {
           if (
-            $new_version eq 'undef' or $new_version == '0' or
+            $new_version eq 'undef' or $new_version == 0 or
             CPAN::Version->vcmp($new_version, $cur_version) == 0
           ) {
             if ($mtime >= $packages{$module}[2]) {
