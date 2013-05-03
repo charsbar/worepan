@@ -187,6 +187,7 @@ sub walk {
     my $archive_file = shift;
     return if -d $archive_file;
 
+    my $path = $archive_file->relative($root);
     my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
     return if $basename =~ /perl\-\d+/; # perls
@@ -212,7 +213,6 @@ sub update_indices {
   $self->walk(callback => sub {
     my ($basedir, $path, $archive_file) = @_;
 
-    my $path = $archive_file->relative($root);
     my $mtime = $archive_file->mtime;
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
