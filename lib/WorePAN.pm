@@ -239,7 +239,7 @@ sub update_indices {
     }
 
     # Provides field has precedence; should also check meta_ok
-    if ($meta && ref $meta eq ref {} && $meta->{provides} && ref $meta->{provides} eq ref {}) {
+    if ($self->_version_from_meta_ok($meta)) {
       $self->_update_packages(\%packages, $meta->{provides}, $path, $mtime);
       return;
     }
@@ -282,6 +282,21 @@ PMFILES:
   $self->_write_mailrc(\%authors);
   $self->_write_packages_details(\%packages);
 
+  return 1;
+}
+
+# borrowed from PAUSE::dist
+sub _version_from_meta_ok {
+  my ($self, $meta) = @_;
+  return unless $meta && ref $meta eq ref {};
+
+  my $provides = $meta->{provides};
+  return unless $provides && ref $provides eq ref {} && %$provides;
+
+  my ($mb_v) = ($meta->{generated_by} || '') =~ /Module::Build version ([\d\.]+)/;
+  return 1 unless $mb_v;
+  return 1 if $mb_v eq '0.250.0';
+  return if $mb_v >= 0.19 && $mb_v < 0.26;
   return 1;
 }
 
