@@ -286,7 +286,7 @@ PMFILES:
 }
 
 sub _update_packages {
-  my ($packages, $info, $path, $mtime) = @_;
+  my ($self, $packages, $info, $path, $mtime) = @_;
 
   for my $module (sort keys %$info) {
     if (!$packages->{$module}) { # shortcut
