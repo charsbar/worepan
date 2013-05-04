@@ -362,7 +362,7 @@ sub _write_packages_details {
       $second = length($ver);
       $first += 8 - $second;
     }
-    $fh->printf("%-${first}s %${second}s %s\n",
+    $fh->printf("%-${first}s %${second}s  %s\n",
       $pkg,
       $ver,
       $packages->{$pkg}[1]
