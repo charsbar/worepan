@@ -1,4 +1,9 @@
 Revision history for WorePAN
 
+0.02 2013/05/05
+  - improved 02packages.details.txt generation
+  - added "walk" method to walk down the worepan directory
+    and do something for each distribution.
+
 0.01 2012/12/09
   - initial release
