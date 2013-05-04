@@ -190,7 +190,7 @@ sub walk {
     my $path = $archive_file->relative($root);
     my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
-    return if $basename =~ /perl\-\d+/; # perls
+    return if $basename =~ /^perl\-\d+/; # perls
     return if !$args{developer_releases} && (
          $basename =~ /\d\.\d+_\d/  # dev release
       or $basename =~ /TRIAL/       # trial release
@@ -355,7 +355,7 @@ sub _write_packages_details {
   $fh->print("File: 02packages.details.txt\n");
   $fh->print("Last-Updated: ".localtime(time)."\n");
   $fh->print("\n");
-  for my $pkg (map {$_->[1]} sort {$a->[0] cmp $b->[0]} map {[lc $_, $_]} keys %$packages) {
+  for my $pkg (map {$_->[1]} sort {($a->[0] cmp $b->[0]) || ($a->[1] cmp $b->[1])} map {[lc $_, $_]} keys %$packages) {
     my ($first, $second) = (30, 8);
     my $ver = defined $packages->{$pkg}[0] ? $packages->{$pkg}[0] : 'undef';
     if (length($pkg) > $first) {
