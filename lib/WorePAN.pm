@@ -592,6 +592,22 @@ Adds distributions to the WorePAN mirror. When you add distributions with this m
 
 Creates/updates mailrc and packages_details indices.
 
+=head2 walk
+
+  $worepan->walk(callback => sub {
+    my $distdir = shift;
+  
+    my $meta_yml = $distdir->file('META.yml');
+  
+    $distdir->recurse(callback => sub {
+      my $file_in_a_dist = shift;
+      return unless $file_in_a_dist =~ /\.pm$/;
+      ...
+    });
+  });
+
+Walks down the WorePAN directory and extracts each distribution into a temporary directory, and runs a callback to which a Path::Extended::Dir object for the directory is passed as an argument. Used internally to create indices.
+
 =head2 root
 
 returns a L<Path::Extended::Dir> object that represents the root path you specified (or created internally).
