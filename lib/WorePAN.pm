@@ -238,6 +238,12 @@ sub update_indices {
       }
     }
 
+    # Provides field has precedence; should also check meta_ok
+    if ($meta && ref $meta eq ref {} && $meta->{provides} && ref $meta->{provides} eq ref {}) {
+      $self->_update_packages(\%packages, $meta->{provides}, $path, $mtime);
+      return;
+    }
+
     my $parser = Parse::PMFile->new($meta);
 PMFILES:
     for my $pmfile (@pmfiles) {
@@ -270,40 +276,46 @@ PMFILES:
       }
 
       my $info = $parser->parse($pmfile);
-      for my $module (sort keys %$info) {
-        if (!$packages{$module}) { # shortcut
-          $packages{$module} = [$info->{$module}{version}, $path, $mtime];
-          next;
-        }
-        my $ok = 0;
-        my $new_version = $info->{$module}{version};
-        my $cur_version = $packages{$module}[0];
-        if (CPAN::Version->vgt($new_version, $cur_version)) {
-          $ok++;
-        }
-        elsif (CPAN::Version->vgt($cur_version, $new_version)) {
-          # lower VERSION number
-        }
-        else {
-          if (
-            $new_version eq 'undef' or $new_version == 0 or
-            CPAN::Version->vcmp($new_version, $cur_version) == 0
-          ) {
-            if ($mtime >= $packages{$module}[2]) {
-              $ok++; # dist is newer
-            }
-          }
-        }
-        if ($ok) {
-          $packages{$module} = [$new_version, $path, $mtime];
-        }
-      }
+      $self->_update_packages(\%packages, $info, $path, $mtime);
     }
   });
   $self->_write_mailrc(\%authors);
   $self->_write_packages_details(\%packages);
 
   return 1;
+}
+
+sub _update_packages {
+  my ($packages, $info, $path, $mtime) = @_;
+
+  for my $module (sort keys %$info) {
+    if (!$packages->{$module}) { # shortcut
+      $packages->{$module} = [$info->{$module}{version}, $path, $mtime];
+      next;
+    }
+    my $ok = 0;
+    my $new_version = $info->{$module}{version};
+    my $cur_version = $packages->{$module}[0];
+    if (CPAN::Version->vgt($new_version, $cur_version)) {
+      $ok++;
+    }
+    elsif (CPAN::Version->vgt($cur_version, $new_version)) {
+      # lower VERSION number
+    }
+    else {
+      if (
+        $new_version eq 'undef' or $new_version == 0 or
+        CPAN::Version->vcmp($new_version, $cur_version) == 0
+      ) {
+        if ($mtime >= $packages->{$module}[2]) {
+          $ok++; # dist is newer
+        }
+      }
+    }
+    if ($ok) {
+      $packages->{$module} = [$new_version, $path, $mtime];
+    }
+  }
 }
 
 sub _write_mailrc {
