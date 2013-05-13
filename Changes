@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.02 2013/05/13
+  - added "no_indices" option
+
 0.02 2013/05/05
   - improved 02packages.details.txt generation
   - added "walk" method to walk down the worepan directory
