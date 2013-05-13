@@ -209,6 +209,8 @@ sub walk {
 sub update_indices {
   my $self = shift;
 
+  return if $self->{no_indices};
+
   my (%authors, %packages);
   $self->walk(callback => sub {
     my ($basedir, $path, $archive_file) = @_;
@@ -568,6 +570,10 @@ If set to true, WorePAN removes its contents when the instance is gone (mainly f
 Given a path to a tar executable, L<CPAN::ParseDistribution> will use it internally; otherwise, L<Archive::Tar> will be used.
 
 =item verbose
+
+=item no_indices
+
+If set to true, WorePAN won't create/update indices.
 
 =back
 
