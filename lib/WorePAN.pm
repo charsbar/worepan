@@ -565,10 +565,6 @@ a BackPAN mirror from where you'd like to fetch files.
 
 If set to true, WorePAN removes its contents when the instance is gone (mainly for tests).
 
-=item tar
-
-Given a path to a tar executable, L<CPAN::ParseDistribution> will use it internally; otherwise, L<Archive::Tar> will be used.
-
 =item verbose
 
 =item no_indices
