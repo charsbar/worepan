@@ -7,6 +7,7 @@ use File::Temp ();
 use Parse::PMFile;
 use Path::Extended::Dir;
 use Path::Extended::File;
+use File::Spec;
 use LWP::Simple;
 use JSON;
 use URI;
@@ -24,7 +25,7 @@ sub new {
   $args{verbose} ||= $ENV{TEST_VERBOSE};
 
   if (!$args{root}) {
-    $args{root} = File::Temp::tempdir(CLEANUP => 1);
+    $args{root} = File::Temp::tempdir(CLEANUP => 1, ($args{tmp} ? (DIR => $args{tmp}) : TMPDIR => 1));
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
   }
   $args{root} = Path::Extended::Dir->new($args{root})->mkdir;
@@ -181,6 +182,7 @@ sub __fetch {
 sub walk {
   my ($self, %args) = @_;
   my $root = $self->{root}->subdir('authors/id');
+  my $tmproot = $self->{tmp} || $args{tmp};
 
   local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
   $root->recurse(callback => sub {
@@ -197,12 +199,14 @@ sub walk {
     );
 
     my $archive = Archive::Any::Lite->new($archive_file->path);
-    my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1));
+    my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1, ($tmproot ? (DIR => $tmproot) : (TMPDIR => 1))));
     $archive->extract($tmpdir);
     my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
     $basedir = $tmpdir unless -d $basedir;
 
     $args{callback}->($basedir, $path, $archive_file);
+
+    $tmpdir->remove;
   });
 }
 
@@ -504,6 +508,7 @@ WorePAN - creates a partial CPAN mirror for tests
       cleanup     => 1,
       use_backpan => 0,
       no_network  => 0,
+      tmp => 'path/to/tmpdir',
     );
 
 =head1 DESCRIPTION
@@ -570,6 +575,10 @@ If set to true, WorePAN removes its contents when the instance is gone (mainly f
 =item no_indices
 
 If set to true, WorePAN won't create/update indices.
+
+=item tmp
+
+If set, temporary directories will be created in the specified directory.
 
 =back
 
