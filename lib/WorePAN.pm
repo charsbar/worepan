@@ -91,8 +91,8 @@ sub _fetch {
       $dest->mtime($source->mtime);
     }
     else {
-      if ($file !~ m{^([A-Z])/(\1[A-Z0-9_])/\2[A-Z0-9_]+/.+}) {
-        if ($file =~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_]+/.+}) {
+      if ($file !~ m{^([A-Z])/(\1[A-Z0-9_])/\2[A-Z0-9_\-]*/.+}) {
+        if ($file =~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_\-]*/.+}) {
           $file = "$1/$1$2/$file";
         }
         else {
