@@ -1,6 +1,9 @@
 Revision history for WorePAN
 
-0.02 2013/05/13
+0.04 2013/06/22
+  - supported rare ids with a dash or of only two letters.
+
+0.03 2013/05/13
   - added "no_indices" option
 
 0.02 2013/05/05
