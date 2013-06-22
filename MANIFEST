@@ -8,5 +8,10 @@ t/10_local.t
 t/20_cpan.t
 t/30_backpan.t
 t/40_requires.t
+t/50_cant_be_included.t
+t/51_rare_cases.t
+t/60_add.t
+t/70_invalid_version.t
+t/80_latest_dists.t
 t/99_pod.t
 t/99_podcoverage.t
