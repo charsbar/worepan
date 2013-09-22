@@ -29,6 +29,7 @@ for my $file (keys %cant_be_included) {
     WorePAN->new(
       files => [$file],
       no_network => 0,
+      use_backpan => 1,
       cleanup => 1,
     );
   };
