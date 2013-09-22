@@ -1,5 +1,9 @@
 Revision history for WorePAN
 
+0.05 2013/09/22
+  - do not override 'verbose' option with TEST_VERBOSE
+    if the option is defined explicitly.
+
 0.04 2013/06/22
   - supported rare ids with a dash or of only two letters.
 
