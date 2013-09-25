@@ -5,6 +5,7 @@ use warnings;
 use Archive::Any::Lite;
 use File::Temp ();
 use Parse::PMFile;
+use Parse::CPAN::Whois;
 use Path::Extended::Dir;
 use Path::Extended::File;
 use File::Spec;
@@ -57,6 +58,7 @@ sub new {
 
 sub root { shift->{root} }
 sub file { shift->{root}->file('authors/id', @_) }
+sub whois { shift->{root}->file('authors/00whois.xml') }
 sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
 sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
 
@@ -285,6 +287,7 @@ PMFILES:
       $self->_update_packages(\%packages, $info, $path, $mtime);
     }
   });
+  $self->_write_whois(\%authors);
   $self->_write_mailrc(\%authors);
   $self->_write_packages_details(\%packages);
 
@@ -337,6 +340,21 @@ sub _update_packages {
       $packages->{$module} = [$new_version, $path, $mtime];
     }
   }
+}
+
+sub _write_whois {
+  my ($self, $authors) = @_;
+
+  my $index = $self->whois;
+  $index->parent->mkdir;
+  $index->openw;
+  $index->printf(qq{<?xml version="1.0" encoding="UTF-8"?>\n<cpan-whois xmlns='http://www.cpan.org/xmlns/whois' last-generated='%s UTC' generated-by='WorePAN %s'>\n}, scalar(gmtime), $VERSION);
+  for my $id (sort keys %$authors) {
+    $index->printf("<cpanid><id>%s</id><type>author</type><fullname>%s</fullname><email>%s\@cpan.org</email></cpanid>\n", $id, $id, lc $id);
+  }
+  $index->print("</cpan-whois>\n");
+  $index->close;
+  $self->_log("created $index");
 }
 
 sub _write_mailrc {
@@ -402,7 +420,9 @@ sub look_for {
   return;
 }
 
-sub authors {
+sub authors { shift->_authors_whois }
+
+sub _authors_mailrc {
   my $self = shift;
 
   my $index = $self->mailrc;
@@ -415,6 +435,24 @@ sub authors {
     next unless $id;
     $email =~ tr/<>//d;
     push @authors, {pauseid => $id, name => $name, email => $email};
+  }
+  \@authors;
+}
+
+sub _authors_whois {
+  my $self = shift;
+
+  my $index = $self->whois;
+  return [] unless $index->exists;
+  my @authors;
+  for (Parse::CPAN::Whois->new($index->path)->authors) {
+    push @authors, {
+      pauseid => $_->pauseid,
+      name => $_->name,
+      asciiname => $_->asciiname,
+      email => $_->email,
+      website => $_->homepage,
+    };
   }
   \@authors;
 }
@@ -627,6 +665,10 @@ returns a L<Path::Extended::Dir> object that represents the root path you specif
 
 takes a relative path to a distribution ("P/PA/PAUSE/distribution.tar.gz") and returns a L<Path::Extended::File> object.
 
+=head2 whois
+
+returns a L<Path::Extended::File> object that represents the "00whois.xml" file.
+
 =head2 mailrc
 
 returns a L<Path::Extended::File> object that represents the "01mailrc.txt.gz" file.
@@ -641,7 +683,7 @@ takes a package name and returns the version and the path of the package if it e
 
 =head2 authors
 
-returns an array reference of hash references each of which holds an author's information stored in the mailrc file.
+returns an array reference of hash references each of which holds an author's information stored in the whois file.
 
 =head2 modules
 

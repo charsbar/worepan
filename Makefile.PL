@@ -18,6 +18,7 @@ my %params = (
         'IO::Zlib' => 0,
         'JSON' => 0,
         'LWP::Simple' => 0,
+        'Parse::CPAN::Whois' => 0,
         'Parse::PMFile' => '0.02',
         'Path::Extended' => 0,
         'Test::More'          => '0.88', # done_testing
