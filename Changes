@@ -1,5 +1,9 @@
 Revision history for WorePAN
 
+0.06 2013/09/25
+  - changed to parse 00whois.xml to get better (accented etc) names.
+    (suggested by dolmen++)
+
 0.05 2013/09/22
   - do not override 'verbose' option with TEST_VERBOSE
     if the option is defined explicitly.
