@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.07 2013/09/25
+  - fixed to use the same keys as Parse::CPAN::Whois.
+
 0.06 2013/09/25
   - changed to parse 00whois.xml to get better (accented etc) names.
     (suggested by dolmen++)
