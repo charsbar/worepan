@@ -451,7 +451,7 @@ sub _authors_whois {
       name => $_->name,
       asciiname => $_->asciiname,
       email => $_->email,
-      website => $_->homepage,
+      homepage => $_->homepage,
     };
   }
   \@authors;
