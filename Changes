@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.08 2013/09/26
+  - dropped CPAN(::Version) dependency
+
 0.07 2013/09/25
   - fixed to use the same keys as Parse::CPAN::Whois.
 
