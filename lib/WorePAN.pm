@@ -14,7 +14,6 @@ use JSON;
 use URI;
 use URI::QueryParam;
 use version;
-use CPAN::Version;
 use CPAN::Meta::YAML;
 use CPAN::DistnameInfo;
 
@@ -320,16 +319,16 @@ sub _update_packages {
     my $ok = 0;
     my $new_version = $info->{$module}{version};
     my $cur_version = $packages->{$module}[0];
-    if (CPAN::Version->vgt($new_version, $cur_version)) {
+    if (Parse::PMFile->_vgt($new_version, $cur_version)) {
       $ok++;
     }
-    elsif (CPAN::Version->vgt($cur_version, $new_version)) {
+    elsif (Parse::PMFile->_vgt($cur_version, $new_version)) {
       # lower VERSION number
     }
     else {
       if (
         $new_version eq 'undef' or $new_version == 0 or
-        CPAN::Version->vcmp($new_version, $cur_version) == 0
+        Parse::PMFile->_vcmp($new_version, $cur_version) == 0
       ) {
         if ($mtime >= $packages->{$module}[2]) {
           $ok++; # dist is newer
@@ -511,7 +510,7 @@ sub latest_distributions {
     my $name = $dist->dist or next;
     if (
       !exists $dists{$name}
-      or CPAN::Version->vlt($dists{$name}->version, $dist->version)
+      or Parse::PMFile->_vlt($dists{$name}->version, $dist->version)
     ) {
       $dists{$name} = $dist;
     }

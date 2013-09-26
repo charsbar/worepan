@@ -13,13 +13,12 @@ my %params = (
         'Archive::Tar' => '1.86',
         'CPAN::DistnameInfo' => 0,
         'CPAN::Meta::YAML' => 0,
-        'CPAN::Version' => 0,
         'File::Temp' => 0,
         'IO::Zlib' => 0,
         'JSON' => 0,
         'LWP::Simple' => 0,
         'Parse::CPAN::Whois' => 0,
-        'Parse::PMFile' => '0.02',
+        'Parse::PMFile' => '0.06', # for private version methods
         'Path::Extended' => 0,
         'Test::More'          => '0.88', # done_testing
         'Test::UseAllModules' => '0.10',
@@ -34,7 +33,7 @@ my %params = (
     },
 );
 
-my $eumm = $ExtUtils::MakeMaker::VERSION;
+my $eumm = eval $ExtUtils::MakeMaker::VERSION;
 delete $params{MIN_PERL_VERSION} if $eumm < 6.48;
 delete $params{META_MERGE}       if $eumm < 6.46;
 delete $params{META_ADD}         if $eumm < 6.46;
