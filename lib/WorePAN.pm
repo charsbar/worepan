@@ -56,7 +56,11 @@ sub new {
 }
 
 sub root { shift->{root} }
-sub file { shift->{root}->file('authors/id', @_) }
+sub file {
+  my $self = shift;
+  my $file = $self->_normalize(File::Spec->catfile(@_)) or return;
+  $self->{root}->file('authors/id', $file);
+}
 sub whois { shift->{root}->file('authors/00whois.xml') }
 sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
 sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
@@ -92,19 +96,27 @@ sub _fetch {
       $dest->mtime($source->mtime);
     }
     else {
-      if ($file !~ m{^([A-Z])/(\1[A-Z0-9_])/\2[A-Z0-9_\-]*/.+}) {
-        if ($file =~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_\-]*/.+}) {
-          $file = "$1/$1$2/$file";
-        }
-        else {
-          warn "unsupported file format: $file\n";
-          next;
-        }
-      }
-
+      $file = $self->_normalize($file) or next;
       $dest = $self->__fetch($file) or next;
     }
   }
+}
+
+sub _normalize {
+  my ($self, $file) = @_;
+
+  $file =~ s|\\|/|g if $^O eq 'MSWin32';
+
+  if ($file !~ m{^([A-Z])/(\1[A-Z0-9_])/\2[A-Z0-9_\-]*/.+}) {
+    if ($file =~ m{^([A-Z])([A-Z0-9_])[A-Z0-9_\-]*/.+}) {
+      $file = "$1/$1$2/$file";
+    }
+    else {
+      warn "unsupported file format: $file\n";
+      return;
+    }
+  }
+  return $file;
 }
 
 sub _dists2files {
