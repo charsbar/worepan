@@ -1,5 +1,9 @@
 Revision history for WorePAN
 
+0.09 2014/01/12
+  - file() now accepts PAUSEID/Distribution.ext (as well as
+    P/PA/PAUSEID/Distribution.ext)
+
 0.08 2013/09/26
   - dropped CPAN(::Version) dependency
 
