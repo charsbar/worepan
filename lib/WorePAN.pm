@@ -16,6 +16,7 @@ use URI::QueryParam;
 use version;
 use CPAN::Meta::YAML;
 use CPAN::DistnameInfo;
+use IO::Zlib;
 
 our $VERSION = '0.09';
 
