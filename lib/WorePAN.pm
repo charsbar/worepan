@@ -18,7 +18,7 @@ use CPAN::Meta::YAML;
 use CPAN::DistnameInfo;
 use IO::Zlib;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 sub new {
   my ($class, %args) = @_;

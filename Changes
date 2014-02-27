@@ -1,5 +1,11 @@
 Revision history for WorePAN
 
+0.10 2014/02/27
+  - added a command line tool to add a distribution to a DarkPAN
+  - internal cleanup
+    - use IO::Zlib explicitly
+    - switched to LWP::UserAgent
+
 0.09 2014/01/12
   - file() now accepts PAUSEID/Distribution.ext (as well as
     P/PA/PAUSEID/Distribution.ext)
