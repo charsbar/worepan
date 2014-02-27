@@ -9,7 +9,7 @@ use Parse::CPAN::Whois;
 use Path::Extended::Dir;
 use Path::Extended::File;
 use File::Spec;
-use LWP::Simple;
+use LWP::UserAgent;
 use JSON;
 use URI;
 use URI::QueryParam;
@@ -37,6 +37,11 @@ sub new {
   $args{no_network} = 1 if !defined $args{no_network} && $ENV{HARNESS_ACTIVE};
 
   $args{pid} = $$;
+
+  $args{ua} ||= LWP::UserAgent->new(
+    agent => "WorePAN/$VERSION",
+    env_proxy => 1,
+  );
 
   my $self = bless \%args, $class;
 
@@ -133,8 +138,12 @@ sub _dists2files {
       map { $dists->{$_} ? "$_,$dists->{$_}" : $_ } @tmp
     ]);
     $self->_log("called API: $uri");
-    my $res = get($uri) or return;
-    my $rows = eval { JSON::decode_json($res) };
+    my $res = $self->{ua}->get($uri);
+    if ($res->is_error) {
+      warn "API error: $uri ".$res->status_line;
+      return;
+    }
+    my $rows = eval { JSON::decode_json($res->decoded_content) };
     if ($@) {
       warn $@;
       return;
@@ -178,15 +187,13 @@ sub __fetch {
   if (!$self->{no_network}) {
     my $url = $self->{cpan}."authors/id/$file";
     $self->_log("mirror $url to $dest");
-    if (!is_error(mirror($url => $dest))) {
-      return $dest;
-    }
+    my $res = $self->{ua}->mirror($url => $dest);
+    return $dest if $res->is_success;
     if ($self->{backpan}) {
       my $url = $self->{backpan}."authors/id/$file";
       $self->_log("mirror $url to $dest");
-      if (!is_error(mirror($url => $dest))) {
-        return $dest;
-      }
+      my $res = $self->{ua}->mirror($url => $dest);
+      return $dest if $res->is_success;
     }
   }
   warn "Can't fetch $file\n";
