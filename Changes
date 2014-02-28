@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.11 2014/02/28
+  - oops, forgot to update MANIFEST
+
 0.10 2014/02/27
   - added a command line tool to add a distribution to a DarkPAN
   - internal cleanup
