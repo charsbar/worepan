@@ -1,3 +1,4 @@
+bin/worepan
 Changes
 lib/WorePAN.pm
 Makefile.PL
