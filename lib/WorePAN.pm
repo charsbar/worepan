@@ -9,7 +9,7 @@ use Parse::CPAN::Whois;
 use Path::Extended::Dir;
 use Path::Extended::File;
 use File::Spec;
-use LWP::UserAgent;
+use HTTP::Tiny;
 use JSON;
 use URI;
 use URI::QueryParam;
@@ -38,9 +38,8 @@ sub new {
 
   $args{pid} = $$;
 
-  $args{ua} ||= LWP::UserAgent->new(
+  $args{ua} ||= HTTP::Tiny->new(
     agent => "WorePAN/$VERSION",
-    env_proxy => 1,
   );
 
   my $self = bless \%args, $class;
@@ -139,8 +138,8 @@ sub _dists2files {
     ]);
     $self->_log("called API: $uri");
     my $res = $self->{ua}->get($uri);
-    if ($res->is_error) {
-      warn "API error: $uri ".$res->status_line;
+    if (!$res->{success}) {
+      warn "API error: $uri $res->{status} $res->{reason}";
       return;
     }
     my $rows = eval { JSON::decode_json($res->decoded_content) };
@@ -188,12 +187,12 @@ sub __fetch {
     my $url = $self->{cpan}."authors/id/$file";
     $self->_log("mirror $url to $dest");
     my $res = $self->{ua}->mirror($url => $dest);
-    return $dest if $res->is_success;
+    return $dest if $res->{success};
     if ($self->{backpan}) {
       my $url = $self->{backpan}."authors/id/$file";
       $self->_log("mirror $url to $dest");
       my $res = $self->{ua}->mirror($url => $dest);
-      return $dest if $res->is_success;
+      return $dest if $res->{success};
     }
   }
   warn "Can't fetch $file\n";
