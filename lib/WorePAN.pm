@@ -3,11 +3,9 @@ package WorePAN;
 use strict;
 use warnings;
 use Archive::Any::Lite;
-use File::Temp ();
 use Parse::PMFile;
 use Parse::CPAN::Whois;
-use Path::Extended::Dir;
-use Path::Extended::File;
+use Path::Tiny;
 use File::Spec;
 use HTTP::Tiny;
 use JSON;
@@ -26,10 +24,11 @@ sub new {
   $args{verbose} = $ENV{TEST_VERBOSE} unless defined $args{verbose};
 
   if (!$args{root}) {
-    $args{root} = File::Temp::tempdir(CLEANUP => 1, ($args{tmp} ? (DIR => $args{tmp}) : TMPDIR => 1));
+    $args{root} = Path::Tiny->tempdir(CLEANUP => 1, ($args{tmp} ? (DIR => $args{tmp}) : TMPDIR => 1));
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
   }
-  $args{root} = Path::Extended::Dir->new($args{root})->mkdir;
+  my $root = $args{root} = path($args{root});
+  $root->mkpath;
   $args{cpan} ||= "http://www.cpan.org/";
   if ($args{use_backpan}) {
     $args{backpan} ||= "http://backpan.cpan.org/";
@@ -63,12 +62,12 @@ sub new {
 sub root { shift->{root} }
 sub file {
   my $self = shift;
-  my $file = $self->_normalize(File::Spec->catfile(@_)) or return;
-  $self->{root}->file('authors/id', $file);
+  my $file = $self->_normalize(path(@_)) or return;
+  $self->{root}->child('authors/id', $file);
 }
-sub whois { shift->{root}->file('authors/00whois.xml') }
-sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
-sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
+sub whois { shift->{root}->child('authors/00whois.xml') }
+sub mailrc { shift->{root}->child('authors/01mailrc.txt.gz') }
+sub packages_details { shift->{root}->child('modules/02packages.details.txt.gz') }
 
 sub add_files {
   my ($self, @files) = @_;
@@ -90,15 +89,16 @@ sub _fetch {
 
   my %authors;
   my %packages;
-  my $_root = $self->{root}->subdir('authors/id');
+  my $_root = $self->{root}->child('authors/id');
   for my $file (@$files) {
     my $dest;
     if (-f $file && $file =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/) {
-      my $source = Path::Extended::File->new($file);
-      $dest = $_root->file('L/LO/LOCAL/', $source->basename);
+      my $source = path($file);
+      $dest = $_root->child('L/LO/LOCAL/', $source->basename);
       $self->_log("copy $source to $dest");
-      $source->copy_to($dest);
-      $dest->mtime($source->mtime);
+      $dest->parent->mkpath;
+      $source->copy($dest);
+      $dest->stat->mtime($source->stat->mtime);
     }
     else {
       $file = $self->_normalize($file) or next;
@@ -142,7 +142,7 @@ sub _dists2files {
       warn "API error: $uri $res->{status} $res->{reason}";
       return;
     }
-    my $rows = eval { JSON::decode_json($res->decoded_content) };
+    my $rows = eval { JSON::decode_json($res->{content}) };
     if ($@) {
       warn $@;
       return;
@@ -169,17 +169,18 @@ sub _log {
 sub __fetch {
   my ($self, $file) = @_;
 
-  my $dest = $self->{root}->file("authors/id/", $file);
+  my $dest = $self->{root}->child("authors/id/", $file);
   return $dest if $dest->exists;
 
-  $dest->parent->mkdir;
+  $dest->parent->mkpath;
 
   if ($self->{local_mirror}) {
-    my $source = Path::Extended::File->new($self->{local_mirror}, "authors/id", $file);
+    my $source = path($self->{local_mirror}, "authors/id", $file);
     if ($source->exists) {
       $self->_log("copy $source to $dest");
-      $source->copy_to($dest);
-      $dest->mtime($source->mtime);
+      $dest->parent->mkpath;
+      $source->copy($dest);
+      $dest->stat->mtime($source->stat->mtime);
       return $dest;
     }
   }
@@ -201,33 +202,33 @@ sub __fetch {
 
 sub walk {
   my ($self, %args) = @_;
-  my $root = $self->{root}->subdir('authors/id');
+  my $root = $self->{root}->child('authors/id');
   my $tmproot = $self->{tmp} || $args{tmp};
 
   local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
-  $root->recurse(callback => sub {
-    my $archive_file = shift;
-    return if -d $archive_file;
+  my $iter = $root->iterator({recurse => 1});
+  while(my $archive_file = $iter->()) {
+    next if -d $archive_file;
 
     my $path = $archive_file->relative($root);
     my $basename = $archive_file->basename;
-    return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
-    return if $basename =~ /^perl\-\d+/; # perls
-    return if !$args{developer_releases} && (
+    next unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
+    next if $basename =~ /^perl\-\d+/; # perls
+    next if !$args{developer_releases} && (
          $basename =~ /\d\.\d+_\d/  # dev release
       or $basename =~ /TRIAL/       # trial release
     );
 
-    my $archive = Archive::Any::Lite->new($archive_file->path);
-    my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1, ($tmproot ? (DIR => $tmproot) : (TMPDIR => 1))));
+    my $archive = Archive::Any::Lite->new("$archive_file");
+    my $tmpdir = Path::Tiny->tempdir(CLEANUP => 1, ($tmproot ? (DIR => $tmproot) : (TMPDIR => 1)));
     $archive->extract($tmpdir);
     my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
     $basedir = $tmpdir unless -d $basedir;
 
     $args{callback}->($basedir, $path, $archive_file);
 
-    $tmpdir->remove;
-  });
+    $tmpdir->remove_tree;
+  }
 }
 
 sub update_indices {
@@ -239,24 +240,24 @@ sub update_indices {
   $self->walk(callback => sub {
     my ($basedir, $path, $archive_file) = @_;
 
-    my $mtime = $archive_file->mtime;
+    my $mtime = $archive_file->stat->mtime;
     my ($author) = $path =~ m{^[A-Z]/[A-Z][A-Z0-9_]/([^/]+)/};
     $authors{$author} = 1;
 
     # a dist that has blib/ shouldn't be indexed
     # see PAUSE::dist::mail_summary
-    return if $basedir->basename eq 'blib' or $basedir->subdir('blib')->exists;
+    return if $basedir->basename eq 'blib' or $basedir->child('blib')->exists;
 
     my ($metafile, @pmfiles);
-    $basedir->recurse(callback => sub {
-      my $file = shift;
+    my $iter = $basedir->iterator({recurse => 1});
+    while(my $file = $iter->()) {
       push @pmfiles, $file if $file =~ /\.pm(?:\.PL)?$/i;
       $metafile ||= $file if $file =~ /META.(?:yml|json)$/;
-    });
+    }
 
     my $meta;
     if ($metafile) {
-      my $content = do { local $/; open my $fh, '<:utf8', $metafile; <$fh> };
+      my $content = path($metafile)->slurp_utf8;
       if ($metafile =~ /\.yml$/) {
         $meta = eval { CPAN::Meta::YAML->read_string($content)->[0] };
       } else {
@@ -364,14 +365,14 @@ sub _write_whois {
   my ($self, $authors) = @_;
 
   my $index = $self->whois;
-  $index->parent->mkdir;
-  $index->openw;
-  $index->printf(qq{<?xml version="1.0" encoding="UTF-8"?>\n<cpan-whois xmlns='http://www.cpan.org/xmlns/whois' last-generated='%s UTC' generated-by='WorePAN %s'>\n}, scalar(gmtime), $VERSION);
+  $index->parent->mkpath;
+  my $fh = $index->openw;
+  $fh->printf(qq{<?xml version="1.0" encoding="UTF-8"?>\n<cpan-whois xmlns='http://www.cpan.org/xmlns/whois' last-generated='%s UTC' generated-by='WorePAN %s'>\n}, scalar(gmtime), $VERSION);
   for my $id (sort keys %$authors) {
-    $index->printf("<cpanid><id>%s</id><type>author</type><fullname>%s</fullname><email>%s\@cpan.org</email></cpanid>\n", $id, $id, lc $id);
+    $fh->printf("<cpanid><id>%s</id><type>author</type><fullname>%s</fullname><email>%s\@cpan.org</email></cpanid>\n", $id, $id, lc $id);
   }
-  $index->print("</cpan-whois>\n");
-  $index->close;
+  $fh->print("</cpan-whois>\n");
+  $fh->close;
   $self->_log("created $index");
 }
 
@@ -379,8 +380,8 @@ sub _write_mailrc {
   my ($self, $authors) = @_;
 
   my $index = $self->mailrc;
-  $index->parent->mkdir;
-  my $fh = IO::Zlib->new($index->path, "wb") or die $!;
+  $index->parent->mkpath;
+  my $fh = IO::Zlib->new("$index", "wb") or die $!;
   for my $id (sort keys %$authors) {
     $fh->printf("alias %s \"%s <%s\@cpan.org>\"\n", $id, $id, lc $id);
   }
@@ -392,8 +393,8 @@ sub _write_packages_details {
   my ($self, $packages) = @_;
 
   my $index = $self->packages_details;
-  $index->parent->mkdir;
-  my $fh = IO::Zlib->new($index->path, "wb") or die $!;
+  $index->parent->mkpath;
+  my $fh = IO::Zlib->new("$index", "wb") or die $!;
   $fh->print("File: 02packages.details.txt\n");
   $fh->print("Last-Updated: ".localtime(time)."\n");
   $fh->print("\n");
@@ -421,7 +422,7 @@ sub look_for {
 
   my $index = $self->packages_details;
   return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+  my $fh = IO::Zlib->new("$index", "rb") or die $!;
 
   my $done_preambles = 0;
   while(<$fh>) {
@@ -445,7 +446,7 @@ sub _authors_mailrc {
 
   my $index = $self->mailrc;
   return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+  my $fh = IO::Zlib->new("$index", "rb") or die $!;
 
   my @authors;
   while(defined(my $line = <$fh>)) {
@@ -463,7 +464,7 @@ sub _authors_whois {
   my $index = $self->whois;
   return [] unless $index->exists;
   my @authors;
-  for (Parse::CPAN::Whois->new($index->path)->authors) {
+  for (Parse::CPAN::Whois->new("$index")->authors) {
     push @authors, {
       pauseid => $_->pauseid,
       name => $_->name,
@@ -480,7 +481,7 @@ sub modules {
 
   my $index = $self->packages_details;
   return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+  my $fh = IO::Zlib->new("$index", "rb") or die $!;
 
   my @modules;
   my $done_preambles = 0;
@@ -502,7 +503,7 @@ sub files {
   my $self = shift;
   my $index = $self->packages_details;
   return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+  my $fh = IO::Zlib->new("$index", "rb") or die $!;
 
   my %files;
   my $done_preambles = 0;
