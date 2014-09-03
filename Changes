@@ -1,5 +1,13 @@
 Revision history for WorePAN
 
+0.12 2014/09/03
+  - improved indexing
+    - developer releases
+    - PAUSE permissions (if provided)
+  - internal cleanup
+    - switched to HTTP::Tiny, Path::Extended::Tiny, JSON::PP
+    - factored out slurp_(whois|mailrc|packages_details) methods
+
 0.11 2014/02/28
   - oops, forgot to update MANIFEST
 
