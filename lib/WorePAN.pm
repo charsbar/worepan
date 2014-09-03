@@ -6,8 +6,7 @@ use Archive::Any::Lite;
 use File::Temp ();
 use Parse::PMFile;
 use Parse::CPAN::Whois;
-use Path::Extended::Dir;
-use Path::Extended::File;
+use Path::Extended::Tiny ();
 use File::Spec;
 use LWP::UserAgent;
 use JSON;
@@ -29,7 +28,7 @@ sub new {
     $args{root} = File::Temp::tempdir(CLEANUP => 1, ($args{tmp} ? (DIR => $args{tmp}) : TMPDIR => 1));
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
   }
-  $args{root} = Path::Extended::Dir->new($args{root})->mkdir;
+  $args{root} = Path::Extended::Tiny->new($args{root})->mkdir;
   $args{cpan} ||= "http://www.cpan.org/";
   if ($args{use_backpan}) {
     $args{backpan} ||= "http://backpan.cpan.org/";
@@ -95,7 +94,7 @@ sub _fetch {
   for my $file (@$files) {
     my $dest;
     if (-f $file && $file =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/) {
-      my $source = Path::Extended::File->new($file);
+      my $source = Path::Extended::Tiny->new($file);
       $dest = $_root->file('L/LO/LOCAL/', $source->basename);
       $self->_log("copy $source to $dest");
       $source->copy_to($dest);
@@ -176,7 +175,7 @@ sub __fetch {
   $dest->parent->mkdir;
 
   if ($self->{local_mirror}) {
-    my $source = Path::Extended::File->new($self->{local_mirror}, "authors/id", $file);
+    my $source = Path::Extended::Tiny->new($self->{local_mirror}, "authors/id", $file);
     if ($source->exists) {
       $self->_log("copy $source to $dest");
       $source->copy_to($dest);
@@ -220,7 +219,7 @@ sub walk {
     );
 
     my $archive = Archive::Any::Lite->new($archive_file->path);
-    my $tmpdir = Path::Extended::Dir->new(File::Temp::tempdir(CLEANUP => 1, ($tmproot ? (DIR => $tmproot) : (TMPDIR => 1))));
+    my $tmpdir = Path::Extended::Tiny->new(File::Temp::tempdir(CLEANUP => 1, ($tmproot ? (DIR => $tmproot) : (TMPDIR => 1))));
     $archive->extract($tmpdir);
     my $basedir = $tmpdir->children == 1 ? ($tmpdir->children)[0] : $tmpdir;
     $basedir = $tmpdir unless -d $basedir;
@@ -674,27 +673,27 @@ Creates/updates mailrc and packages_details indices.
     });
   });
 
-Walks down the WorePAN directory and extracts each distribution into a temporary directory, and runs a callback to which a Path::Extended::Dir object for the directory is passed as an argument. Used internally to create indices.
+Walks down the WorePAN directory and extracts each distribution into a temporary directory, and runs a callback to which a Path::Extended::Tiny object for the directory is passed as an argument. Used internally to create indices.
 
 =head2 root
 
-returns a L<Path::Extended::Dir> object that represents the root path you specified (or created internally).
+returns a L<Path::Extended::Tiny> object that represents the root path you specified (or created internally).
 
 =head2 file
 
-takes a relative path to a distribution ("P/PA/PAUSE/distribution.tar.gz") and returns a L<Path::Extended::File> object.
+takes a relative path to a distribution ("P/PA/PAUSE/distribution.tar.gz") and returns a L<Path::Extended::Tiny> object.
 
 =head2 whois
 
-returns a L<Path::Extended::File> object that represents the "00whois.xml" file.
+returns a L<Path::Extended::Tiny> object that represents the "00whois.xml" file.
 
 =head2 mailrc
 
-returns a L<Path::Extended::File> object that represents the "01mailrc.txt.gz" file.
+returns a L<Path::Extended::Tiny> object that represents the "01mailrc.txt.gz" file.
 
 =head2 packages_details
 
-returns a L<Path::Extended::File> object that represents the "02packages.details.txt.gz" file.
+returns a L<Path::Extended::Tiny> object that represents the "02packages.details.txt.gz" file.
 
 =head2 look_for
 
