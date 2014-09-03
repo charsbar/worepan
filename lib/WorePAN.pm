@@ -2,21 +2,12 @@ package WorePAN;
 
 use strict;
 use warnings;
-use Archive::Any::Lite;
 use File::Temp ();
-use Parse::PMFile;
-use Parse::LocalDistribution;
-use Parse::CPAN::Whois;
 use Path::Extended::Tiny ();
 use File::Spec;
 use HTTP::Tiny;
-use JSON::PP;
-use URI;
-use URI::QueryParam;
 use version;
 use CPAN::Meta::YAML;
-use CPAN::DistnameInfo;
-use IO::Zlib;
 
 our $VERSION = '0.11';
 
@@ -73,6 +64,7 @@ sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') 
 sub slurp_whois {
   my $self = shift;
   my $index = $self->whois;
+  require Parse::CPAN::Whois;
   Parse::CPAN::Whois->new($index->path)->authors;
 }
 
@@ -88,6 +80,8 @@ sub slurp_packages_details {
 sub _slurp {
   my ($self, $index) = @_;
   return unless $index->exists;
+
+  require IO::Zlib;
   my $fh = IO::Zlib->new($index->path, "rb") or die $!;
   my @lines;
   my $done_preambles;
@@ -160,6 +154,10 @@ sub _normalize {
 sub _dists2files {
   my ($self, $dists) = @_;
   return unless ref $dists eq ref {};
+
+  require URI;
+  require URI::QueryParam;
+  require JSON::PP;
 
   my $uri = URI->new('http://api.cpanauthors.org/uploads/dist');
   my @keys = keys %$dists;
@@ -238,6 +236,8 @@ sub walk {
   my $tmproot = $self->{tmp} || $args{tmp};
   my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
 
+  require Archive::Any::Lite;
+
   local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
   $root->recurse(callback => sub {
     my $archive_file = shift;
@@ -268,6 +268,10 @@ sub update_indices {
   my ($self, %args) = @_;
 
   return if $self->{no_indices};
+
+  require IO::Zlib;
+  require Parse::PMFile;
+  require Parse::LocalDistribution;
 
   my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
   my $permissions = $args{permissions} || $self->{permissions};
@@ -456,6 +460,8 @@ sub files {
 
 sub latest_distributions {
   my $self = shift;
+
+  require CPAN::DistnameInfo;
 
   my %dists;
   for my $file (@{ $self->files || [] }) {
