@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use FindBin;
-use Path::Extended;
+use Path::Extended::Tiny;
 use Test::More;
 use WorePAN;
 use Archive::Tar;
