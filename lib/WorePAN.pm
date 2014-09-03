@@ -566,6 +566,14 @@ If set to true, WorePAN removes its contents when the instance is gone (mainly f
 
 If set to true, WorePAN won't create/update indices.
 
+=item developer_releases
+
+WorePAN usually ignores developer releases and doesn't fetch/index them. Set this to true if you need them for whatever reasons.
+
+=item permissions
+
+If you pass a valid PAUSE::Permissions instance, it will be used while indexing.
+
 =item tmp
 
 If set, temporary directories will be created in the specified directory.
