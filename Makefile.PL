@@ -1,33 +1,13 @@
 use strict;
 use warnings;
-use ExtUtils::MakeMaker;
+use ExtUtils::MakeMaker::CPANfile;
 
-my %params = (
+WriteMakefile(
     NAME          => 'WorePAN',
     AUTHOR        => 'Kenichi Ishigaki <ishigaki@cpan.org>',
     VERSION_FROM  => 'lib/WorePAN.pm',
     ABSTRACT_FROM => 'lib/WorePAN.pm',
     LICENSE       => 'perl',
-    PREREQ_PM     => {
-        'Archive::Any::Lite' => '0.06', # for IGNORE_SYMLINK
-        'Archive::Tar' => '1.86',
-        'CPAN::DistnameInfo' => 0,
-        'CPAN::Meta::YAML' => 0,
-        'File::Temp' => 0,
-        'Getopt::Long' => 0,
-        'IO::Zlib' => 0,
-        'JSON' => 0,
-        'LWP::UserAgent' => 0,
-        'Parse::CPAN::Whois' => 0,
-        'Parse::PMFile' => '0.06', # for private version methods
-        'Path::Extended::Tiny' => 0,
-        'Pod::Usage' => 0,
-        'Test::More'          => '0.88', # done_testing
-        'Test::UseAllModules' => '0.10',
-        'URI' => 0,
-        'URI::QueryParam' => 0,
-        'version' => 0,
-    },
     EXE_FILES => ['bin/worepan'],
     META_MERGE => {
         resources => {
@@ -35,26 +15,3 @@ my %params = (
         },
     },
 );
-
-my $eumm = eval $ExtUtils::MakeMaker::VERSION;
-delete $params{MIN_PERL_VERSION} if $eumm < 6.48;
-delete $params{META_MERGE}       if $eumm < 6.46;
-delete $params{META_ADD}         if $eumm < 6.46;
-delete $params{LICENSE}          if $eumm < 6.31;
-
-if ($eumm < 6.52 && $params{CONFIGURE_REQUIRES}) {
-    $params{PREREQ_PM} = {
-        %{ $params{PREREQ_PM}          || {} },
-        %{ $params{CONFIGURE_REQUIRES} },
-    };
-    delete $params{CONFIGURE_REQUIRES};
-}
-if ($eumm < 6.5503 && $params{BUILD_REQUIRES}) {
-    $params{PREREQ_PM} = {
-        %{ $params{PREREQ_PM}      || {} },
-        %{ $params{BUILD_REQUIRES} },
-    };
-    delete $params{BUILD_REQUIRES};
-}
-
-WriteMakefile(%params);
