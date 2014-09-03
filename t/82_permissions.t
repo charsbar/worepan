@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use Test::More;
 use WorePAN;
-use IO::Zlib;
 use File::Temp qw/tempdir/;
 
 plan skip_all => "set WOREPAN_NETWORK_TEST to test" unless $ENV{WOREPAN_NETWORK_TEST};
@@ -28,8 +27,7 @@ my $worepan = WorePAN->new(
   no_network => 0,
   permissions => PAUSE::Permissions->new(path => $perms),
 );
-my $fh = IO::Zlib->new($worepan->packages_details->path, "rb");
-my @lines = <$fh>;
+my @lines = $worepan->slurp_packages_details;
 
 ok !grep /Path::Extended::File/, @lines;
 

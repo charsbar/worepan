@@ -70,6 +70,39 @@ sub whois { shift->{root}->file('authors/00whois.xml') }
 sub mailrc { shift->{root}->file('authors/01mailrc.txt.gz') }
 sub packages_details { shift->{root}->file('modules/02packages.details.txt.gz') }
 
+sub slurp_whois {
+  my $self = shift;
+  my $index = $self->whois;
+  Parse::CPAN::Whois->new($index->path)->authors;
+}
+
+sub slurp_mailrc {
+  my $self = shift;
+  $self->_slurp($self->mailrc);
+}
+sub slurp_packages_details {
+  my $self = shift;
+  $self->_slurp($self->packages_details);
+}
+
+sub _slurp {
+  my ($self, $index) = @_;
+  return unless $index->exists;
+  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
+  my @lines;
+  my $done_preambles;
+  while(<$fh>) {
+    chomp;
+    if (/^\s*$/) {
+      $done_preambles = 1;
+      next;
+    }
+    next unless $done_preambles;
+    push @lines, $_;
+  }
+  @lines;
+}
+
 sub add_files {
   my ($self, @files) = @_;
   $self->_fetch(\@files);
@@ -360,18 +393,7 @@ sub look_for {
 
   return unless defined $package;
 
-  my $index = $self->packages_details;
-  return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
-
-  my $done_preambles = 0;
-  while(<$fh>) {
-    chomp;
-    if (/^\s*$/) {
-      $done_preambles = 1;
-      next;
-    }
-    next unless $done_preambles;
+  for ($self->slurp_packages_details) {
     if (/^$package\s+(\S+)\s+(\S+)$/) {
       return wantarray ? ($1, $2) : $1;
     }
@@ -384,13 +406,9 @@ sub authors { shift->_authors_whois }
 sub _authors_mailrc {
   my $self = shift;
 
-  my $index = $self->mailrc;
-  return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
-
   my @authors;
-  while(defined(my $line = <$fh>)) {
-    my ($id, $name, $email) = $line =~ /^alias\s+(\S+)\s+"?(.+?)\s+(\S+?)"?\s*$/;
+  for ($self->slurp_mailrc) {
+    my ($id, $name, $email) = /^alias\s+(\S+)\s+"?(.+?)\s+(\S+?)"?\s*$/;
     next unless $id;
     $email =~ tr/<>//d;
     push @authors, {pauseid => $id, name => $name, email => $email};
@@ -401,10 +419,8 @@ sub _authors_mailrc {
 sub _authors_whois {
   my $self = shift;
 
-  my $index = $self->whois;
-  return [] unless $index->exists;
   my @authors;
-  for (Parse::CPAN::Whois->new($index->path)->authors) {
+  for ($self->slurp_whois) {
     push @authors, {
       pauseid => $_->pauseid,
       name => $_->name,
@@ -419,20 +435,8 @@ sub _authors_whois {
 sub modules {
   my $self = shift;
 
-  my $index = $self->packages_details;
-  return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
-
   my @modules;
-  my $done_preambles = 0;
-  while(<$fh>) {
-    chomp;
-    if (/^\s*$/) {
-      $done_preambles = 1;
-      next;
-    }
-    next unless $done_preambles;
-
+  for ($self->slurp_packages_details) {
     /^(\S+)\s+(\S+)\s+(\S+)/ or next;
     push @modules, {module => $1 ,version => $2 eq 'undef' ? undef : $2, file => $3};
   }
@@ -441,20 +445,9 @@ sub modules {
 
 sub files {
   my $self = shift;
-  my $index = $self->packages_details;
-  return [] unless $index->exists;
-  my $fh = IO::Zlib->new($index->path, "rb") or die $!;
 
   my %files;
-  my $done_preambles = 0;
-  while(<$fh>) {
-    chomp;
-    if (/^\s*$/) {
-      $done_preambles = 1;
-      next;
-    }
-    next unless $done_preambles;
-
+  for ($self->slurp_packages_details) {
     /^\S+\s+\S+\s+(\S+)/ or next;
     $files{$1} = 1;
   }
@@ -624,17 +617,17 @@ returns a L<Path::Extended::Tiny> object that represents the root path you speci
 
 takes a relative path to a distribution ("P/PA/PAUSE/distribution.tar.gz") and returns a L<Path::Extended::Tiny> object.
 
-=head2 whois
+=head2 whois, slurp_whois
 
-returns a L<Path::Extended::Tiny> object that represents the "00whois.xml" file.
+returns a L<Path::Extended::Tiny> object that represents the "00whois.xml" file. C<slurp_whois> returns a list of author entries parsed by L<Parse::CPAN::Whois>.
 
-=head2 mailrc
+=head2 mailrc, slurp_mailrc
 
-returns a L<Path::Extended::Tiny> object that represents the "01mailrc.txt.gz" file.
+returns a L<Path::Extended::Tiny> object that represents the "01mailrc.txt.gz" file. C<slurp_mailrc> returns a list of lines without preambles.
 
-=head2 packages_details
+=head2 packages_details, slurp_packages_details
 
-returns a L<Path::Extended::Tiny> object that represents the "02packages.details.txt.gz" file.
+returns a L<Path::Extended::Tiny> object that represents the "02packages.details.txt.gz" file. C<slurp_packages_details> returns a list of lines without preambles.
 
 =head2 look_for
 
