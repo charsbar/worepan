@@ -6,8 +6,6 @@ use File::Temp ();
 use Path::Extended::Tiny ();
 use File::Spec;
 use HTTP::Tiny;
-use version;
-use CPAN::Meta::YAML;
 
 our $VERSION = '0.11';
 
