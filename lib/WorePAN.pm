@@ -237,6 +237,7 @@ sub update_indices {
   return if $self->{no_indices};
 
   my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
+  my $permissions = $args{permissions} || $self->{permissions};
 
   my (%authors, %packages);
   $self->walk(%args, callback => sub {
@@ -250,7 +251,12 @@ sub update_indices {
     # see PAUSE::dist::mail_summary
     return if $basedir->basename eq 'blib' or $basedir->subdir('blib')->exists;
 
-    my $parser = Parse::LocalDistribution->new({ALLOW_DEV_VERSION => $allow_dev_releases});
+    my $args = {ALLOW_DEV_VERSION => $allow_dev_releases};
+    if ($permissions) {
+      $args->{PERMISSIONS} = $permissions;
+      $args->{USERID} = $author;
+    }
+    my $parser = Parse::LocalDistribution->new($args);
     my $info = $parser->parse($basedir);
     $self->_update_packages(\%packages, $info, $path, $mtime);
   });
