@@ -15,5 +15,6 @@ t/51_rare_cases.t
 t/60_add.t
 t/70_invalid_version.t
 t/80_latest_dists.t
+t/81_dev_releases.t
 t/99_pod.t
 t/99_podcoverage.t

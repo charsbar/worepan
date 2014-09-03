@@ -54,7 +54,7 @@ sub new {
 
   if (@files) {
     $self->_fetch(\@files);
-    $self->update_indices;
+    $self->update_indices(%args);
   }
 
   $self;
@@ -203,6 +203,7 @@ sub walk {
   my ($self, %args) = @_;
   my $root = $self->{root}->subdir('authors/id');
   my $tmproot = $self->{tmp} || $args{tmp};
+  my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
 
   local $Archive::Any::Lite::IGNORE_SYMLINK = 1;
   $root->recurse(callback => sub {
@@ -213,7 +214,7 @@ sub walk {
     my $basename = $archive_file->basename;
     return unless $basename =~ /\.(?:tar\.(?:gz|bz2)|tgz|zip)$/;
     return if $basename =~ /^perl\-\d+/; # perls
-    return if !$args{developer_releases} && (
+    return if !$allow_dev_releases && (
          $basename =~ /\d\.\d+_\d/  # dev release
       or $basename =~ /TRIAL/       # trial release
     );
@@ -231,12 +232,14 @@ sub walk {
 }
 
 sub update_indices {
-  my $self = shift;
+  my ($self, %args) = @_;
 
   return if $self->{no_indices};
 
+  my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
+
   my (%authors, %packages);
-  $self->walk(callback => sub {
+  $self->walk(%args, callback => sub {
     my ($basedir, $path, $archive_file) = @_;
 
     my $mtime = $archive_file->mtime;
@@ -247,7 +250,7 @@ sub update_indices {
     # see PAUSE::dist::mail_summary
     return if $basedir->basename eq 'blib' or $basedir->subdir('blib')->exists;
 
-    my $parser = Parse::LocalDistribution->new;
+    my $parser = Parse::LocalDistribution->new({ALLOW_DEV_VERSION => $allow_dev_releases});
     my $info = $parser->parse($basedir);
     $self->_update_packages(\%packages, $info, $path, $mtime);
   });
