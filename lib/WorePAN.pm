@@ -9,7 +9,7 @@ use Parse::CPAN::Whois;
 use Path::Extended::Tiny ();
 use File::Spec;
 use LWP::UserAgent;
-use JSON;
+use JSON::PP;
 use URI;
 use URI::QueryParam;
 use version;
@@ -142,7 +142,7 @@ sub _dists2files {
       warn "API error: $uri ".$res->status_line;
       return;
     }
-    my $rows = eval { JSON::decode_json($res->decoded_content) };
+    my $rows = eval { JSON::PP::decode_json($res->decoded_content) };
     if ($@) {
       warn $@;
       return;
@@ -260,7 +260,7 @@ sub update_indices {
       if ($metafile =~ /\.yml$/) {
         $meta = eval { CPAN::Meta::YAML->read_string($content)->[0] };
       } else {
-        $meta = eval { JSON::decode_json($content) };
+        $meta = eval { JSON::PP::decode_json($content) };
       }
     }
 
