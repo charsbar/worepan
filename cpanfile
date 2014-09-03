@@ -8,6 +8,7 @@ requires 'HTTP::Tiny' => 0;
 requires 'IO::Zlib' => 0;
 requires 'JSON::PP' => 0;
 requires 'Parse::CPAN::Whois' => 0;
+requires 'Parse::LocalDistribution' => '0.14'; # permissions
 requires 'Parse::PMFile' => '0.22'; # 0.21 is broken
 requires 'Path::Extended::Tiny' => 0;
 requires 'Pod::Usage' => 0;

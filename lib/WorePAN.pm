@@ -5,6 +5,7 @@ use warnings;
 use Archive::Any::Lite;
 use File::Temp ();
 use Parse::PMFile;
+use Parse::LocalDistribution;
 use Parse::CPAN::Whois;
 use Path::Extended::Tiny ();
 use File::Spec;
@@ -246,63 +247,9 @@ sub update_indices {
     # see PAUSE::dist::mail_summary
     return if $basedir->basename eq 'blib' or $basedir->subdir('blib')->exists;
 
-    my ($metafile, @pmfiles);
-    $basedir->recurse(callback => sub {
-      my $file = shift;
-      push @pmfiles, $file if $file =~ /\.pm(?:\.PL)?$/i;
-      $metafile ||= $file if $file =~ /META.(?:yml|json)$/;
-    });
-
-    my $meta;
-    if ($metafile) {
-      my $content = do { local $/; open my $fh, '<:utf8', $metafile; <$fh> };
-      if ($metafile =~ /\.yml$/) {
-        $meta = eval { CPAN::Meta::YAML->read_string($content)->[0] };
-      } else {
-        $meta = eval { JSON::PP::decode_json($content) };
-      }
-    }
-
-    # Provides field has precedence; should also check meta_ok
-    if ($self->_version_from_meta_ok($meta)) {
-      $self->_update_packages(\%packages, $meta->{provides}, $path, $mtime);
-      return;
-    }
-
-    my $parser = Parse::PMFile->new($meta);
-PMFILES:
-    for my $pmfile (@pmfiles) {
-      my $relpath = $pmfile->relative($basedir);
-
-      # adopted from PAUSE::dist::filter_pms
-      next if $relpath =~ m!^(?:x?t|inc|local|perl5)!;
-
-      if ($meta) {
-        my $no_index = $meta->{no_index} || $meta->{private};
-        if (ref $no_index eq 'HASH') {
-          my %map = (
-            file => qr{\z},
-            directory => qr{/},
-          );
-          for my $k (qw(file directory)) {
-            next unless my $v = $no_index->{$k};
-            my $rest = $map{$k};
-            if (ref $v eq 'ARRAY') {
-              for my $ve (@$v) {
-                $ve =~ s|/+$||;
-                next PMFILES if $relpath =~ /^$ve$rest/;
-              }
-            } else {
-              $v =~ s|/+$||;
-              next PMFILES if $relpath =~ /^$v$rest/;
-            }
-          }
-        }
-      }
-
-      my $info = $parser->parse($pmfile);
-      $self->_update_packages(\%packages, $info, $path, $mtime);
-    }
+    my $parser = Parse::LocalDistribution->new;
+    my $info = $parser->parse($basedir);
+    $self->_update_packages(\%packages, $info, $path, $mtime);
   });
   $self->_write_whois(\%authors);
   $self->_write_mailrc(\%authors);
@@ -311,31 +258,17 @@ PMFILES:
   return 1;
 }
 
-# borrowed from PAUSE::dist
-sub _version_from_meta_ok {
-  my ($self, $meta) = @_;
-  return unless $meta && ref $meta eq ref {};
-
-  my $provides = $meta->{provides};
-  return unless $provides && ref $provides eq ref {} && %$provides;
-
-  my ($mb_v) = ($meta->{generated_by} || '') =~ /Module::Build version ([\d\.]+)/;
-  return 1 unless $mb_v;
-  return 1 if $mb_v eq '0.250.0';
-  return if $mb_v >= 0.19 && $mb_v < 0.26;
-  return 1;
-}
-
 sub _update_packages {
   my ($self, $packages, $info, $path, $mtime) = @_;
 
   for my $module (sort keys %$info) {
+    next unless exists $info->{$module}{version};
+    my $new_version = $info->{$module}{version};
     if (!$packages->{$module}) { # shortcut
-      $packages->{$module} = [$info->{$module}{version}, $path, $mtime];
+      $packages->{$module} = [$new_version, $path, $mtime];
       next;
     }
     my $ok = 0;
-    my $new_version = $info->{$module}{version};
     my $cur_version = $packages->{$module}[0];
     if (Parse::PMFile->_vgt($new_version, $cur_version)) {
       $ok++;
