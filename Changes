@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.13 2014/09/04
+  - fixed a test that still used Path::Extended (syohex++)
+
 0.12 2014/09/03
   - improved indexing
     - developer releases
