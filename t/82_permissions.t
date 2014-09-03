@@ -31,7 +31,7 @@ my @lines = $worepan->slurp_packages_details;
 
 ok !grep /Path::Extended::File/, @lines;
 
-note join "", @lines;
+note join "\n", @lines, "";
 
 unlink $perms;
 

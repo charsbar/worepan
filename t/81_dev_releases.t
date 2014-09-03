@@ -23,7 +23,7 @@ for my $allow_dev (0..1) {
   } else {
     ok !grep /1\.43_07/, @lines;
   }
-  note join "", @lines;
+  note join "\n", @lines, "";
 }
 
 done_testing;
