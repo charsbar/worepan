@@ -14,6 +14,7 @@ t/50_cant_be_included.t
 t/51_rare_cases.t
 t/60_add.t
 t/70_invalid_version.t
+t/71_indexed_undef_version.t
 t/80_latest_dists.t
 t/81_dev_releases.t
 t/82_permissions.t
