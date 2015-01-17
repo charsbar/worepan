@@ -1,5 +1,9 @@
 Revision history for WorePAN
 
+0.14 2015/01/17
+  - bumped up the required version of Parse::PMFile to 0.35
+    to tolerate version line errors as undef
+
 0.13 2014/09/04
   - fixed a test that still used Path::Extended (syohex++)
 
