@@ -14,6 +14,15 @@ sub new {
 
   $args{verbose} = $ENV{TEST_VERBOSE} unless defined $args{verbose};
 
+  if ($args{use_minicpan}) {
+    eval { require CPAN::Mini } or die "requires CPAN::Mini";
+    my %mini_config = CPAN::Mini->read_config;
+    my $local = $mini_config{local};
+    die "MiniCPAN not found" unless $local && -d $local;
+    $args{root} = $local;
+    $args{cleanup} = 0;
+  }
+
   if (!$args{root}) {
     $args{root} = File::Temp::tempdir(CLEANUP => 1, ($args{tmp} ? (DIR => $args{tmp}) : TMPDIR => 1));
     warn "'root' is missing; created a temporary WorePAN directory: $args{root}\n" if $args{verbose};
@@ -508,6 +517,16 @@ WorePAN - creates a partial CPAN mirror for tests
       tmp => 'path/to/tmpdir',
     );
 
+    # walk through a MiniCPAN to investigate META data
+    WorePAN->new(use_minicpan => 1)->walk(sub {
+      my $dir = shift;
+      my $meta_yml = $dir->file('META.yml');
+      return unless -f $meta_yml;
+      my $meta = eval { Parse::CPAN::Meta->load_file($meta_yml) };
+      ...
+    });
+
+
 =head1 DESCRIPTION
 
 WorePAN helps you to create a partial CPAN mirror with minimal indices. It's useful when you test something that requires a small part of a CPAN mirror. You can use it to build a DarkPAN as well.
@@ -527,6 +546,10 @@ Options are:
 =item root
 
 If specified, a WorePAN mirror will be created under the specified directory; otherwise, it will be created under a temporary directory (which is accessible via C<root>).
+
+=item use_minicpan
+
+If set to true, WorePAN reads C<.minicpanrc> file to find your local MiniCPAN and uses it as a WorePAN root.
 
 =item cpan
 
