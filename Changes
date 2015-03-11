@@ -1,5 +1,9 @@
 Revision history for WorePAN
 
+0.15 2015/03/11
+  - added 'use_minicpan' option
+  - let walk() accept a single code reference as its argument
+
 0.14 2015/01/17
   - bumped up the required version of Parse::PMFile to 0.35
     to tolerate version line errors as undef
