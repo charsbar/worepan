@@ -229,7 +229,10 @@ sub __fetch {
 }
 
 sub walk {
-  my ($self, %args) = @_;
+  my $self = shift;
+  my %args = (@_ == 1 && ref $_[0] eq ref sub {})
+    ? (callback => $_[0])
+    : @_;
   my $root = $self->{root}->subdir('authors/id');
   my $tmproot = $self->{tmp} || $args{tmp};
   my $allow_dev_releases = $args{developer_releases} || $self->{developer_releases};
@@ -607,7 +610,7 @@ Creates/updates mailrc and packages_details indices.
 
 =head2 walk
 
-  $worepan->walk(callback => sub {
+  $worepan->walk(sub {
     my $distdir = shift;
   
     my $meta_yml = $distdir->file('META.yml');
