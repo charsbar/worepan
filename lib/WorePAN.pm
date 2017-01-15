@@ -333,6 +333,7 @@ sub _update_packages {
       # lower VERSION number
     }
     else {
+      no warnings; # numeric/version
       if (
         $new_version eq 'undef' or $new_version == 0 or
         Parse::PMFile->_vcmp($new_version, $cur_version) == 0
