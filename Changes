@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.16 2017/01/15
+  - suppress a numeric comparison warning of vstring (skaji++)
+
 0.15 2015/03/11
   - added 'use_minicpan' option
   - let walk() accept a single code reference as its argument
