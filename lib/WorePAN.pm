@@ -357,7 +357,7 @@ sub _write_whois {
   $index->openw;
   $index->printf(qq{<?xml version="1.0" encoding="UTF-8"?>\n<cpan-whois xmlns='http://www.cpan.org/xmlns/whois' last-generated='%s UTC' generated-by='WorePAN %s'>\n}, scalar(gmtime), $VERSION);
   for my $id (sort keys %$authors) {
-    $index->printf("<cpanid><id>%s</id><type>author</type><fullname>%s</fullname><email>%s\@cpan.org</email></cpanid>\n", $id, $id, lc $id);
+    $index->printf("<cpanid><id>%s</id><type>author</type><fullname>%s</fullname><email>%s\@cpan.org</email><has_cpandir>1</has_cpandir></cpanid>\n", $id, $id, lc $id);
   }
   $index->print("</cpan-whois>\n");
   $index->close;
