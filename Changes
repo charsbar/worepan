@@ -1,5 +1,8 @@
 Revision history for WorePAN
 
+0.17 2017/04/22
+  - tweak self-made whois index to include has_cpandir
+
 0.16 2017/01/15
   - suppress a numeric comparison warning of vstring (skaji++)
 
