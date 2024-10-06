@@ -472,11 +472,11 @@ sub files {
 sub latest_distributions {
   my $self = shift;
 
-  require CPAN::DistnameInfo;
+  require Parse::Distname;
 
   my %dists;
   for my $file (@{ $self->files || [] }) {
-    my $dist = CPAN::DistnameInfo->new($file);
+    my $dist = Parse::Distname->new($file);
     my $name = $dist->dist or next;
     if (
       !exists $dists{$name}
