@@ -7,7 +7,7 @@ use Path::Extended::Tiny ();
 use File::Spec;
 use HTTP::Tiny;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 sub new {
   my ($class, %args) = @_;
